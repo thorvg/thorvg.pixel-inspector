@@ -113,19 +113,51 @@ When `--evaluator=flip` is selected:
 - An image is marked as different when the adjusted surface mean reaches
   `--flip-surface-mean-threshold`.
 
+### Draw Tests
+
+C++ draw tests can be registered with `DRAW_TEST` under `src/draw_test`:
+
+```cpp
+DRAW_TEST(name, width, height, canvas)
+{
+    // Add ThorVG paints to canvas.
+    return true;
+}
+```
+
+For each backend, registered draw tests are rendered after that backend's asset
+tests. In update mode, their reference images are updated after that backend's
+asset references.
+
+Add new draw test `.cpp` files to `src/draw_test/meson.build` so they are linked
+into the inspector and registered at startup.
+
+Current draw tests cover shapes, paths, gradients, gradient strokes, fill rules,
+fill spread modes, scenes, opacity, trim paths, text layout, raw picture tiling,
+SVG pictures, and clipping.
+
 ## Output Layout
 
 ```text
 artifacts/
   reference/
     <backend>/
+      draw_test/
+      lottie/
+      svg/
   test/
     <backend>/
+      draw_test/
+      lottie/
+      svg/
   report/
     reporter.html or reporter.md
     data.json
     diff/
       <backend>/
+        draw_test/
+        lottie/
+        svg/
 ```
 
 The report file is `reporter.html` for HTML output and `reporter.md` for Markdown output.

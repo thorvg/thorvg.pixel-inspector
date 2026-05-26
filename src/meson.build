@@ -25,12 +25,14 @@ subdir('common')
 subdir('engine')
 subdir('saver')
 subdir('evaluator')
+subdir('draw_test')
 
 pixel_inspector_dep += external_dep
 pixel_inspector_dep += common_dep
 pixel_inspector_dep += engine_dep
 pixel_inspector_dep += saver_dep
 pixel_inspector_dep += evaluator_dep
+pixel_inspector_dep += draw_test_dep
 
 pixel_inspector_source_file += [
     'main.cpp',
