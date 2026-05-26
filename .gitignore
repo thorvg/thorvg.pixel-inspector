@@ -1,0 +1,17 @@
+build
+builddir
+doc
+.a*
+.c*
+.vscode
+.idea
+*.swp
+*.tvg
+*.tmp
+*.code-workspace
+.DS_Store
+temp
+compile_commands.json
+artifacts/report/*
+artifacts/test/*
+artifacts/reference/*
