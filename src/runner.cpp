@@ -20,30 +20,47 @@
  * SOFTWARE.
  */
 
-#include <algorithm>
+#include <cstring>
 #include <filesystem>
-#include <utility>
 
 #include <thorvg.h>
 
 #include "runner.h"
 #include "engine.h"
-#include "evaluationQueue.h"
+#include "evaluator.h"
 #include "drawTest.h"
 #include "htmlSaver.h"
-#include "mdSaver.h"
 #include "pngSaver.h"
 
-static std::filesystem::path _path(const std::string& resourceTargetDir, const std::string& outputDir, const std::string& backend, const std::string& asset)
+static std::filesystem::path _path(const std::string& resourceTargetDir, const std::string& artifactsDir, const std::string& backend, const std::string& asset, const char* role)
 {
-    return std::filesystem::path(outputDir) / backend / std::filesystem::path(asset)
-                .lexically_relative(resourceTargetDir)
-                .replace_extension(".png");
+    auto relative = std::filesystem::path(asset).lexically_relative(resourceTargetDir);
+    relative.replace_extension("." + backend + "." + role + ".png");
+    return std::filesystem::path(artifactsDir) / relative;
 }
 
-static std::filesystem::path _drawTestPath(const std::string& outputDir, const std::string& backend, const char* name)
+static std::filesystem::path _drawTestPath(const std::string& artifactsDir, const std::string& backend, const char* name, const char* role)
 {
-    return std::filesystem::path(outputDir) / backend / "draw_test" / (std::string(name) + ".png");
+    return std::filesystem::path(artifactsDir) / "draw_test" / (std::string(name) + "." + backend + "." + role + ".png");
+}
+
+static void _removeBySuffix(const std::string& artifactsDir, const char* suffix)
+{
+    std::error_code error;
+    const auto root = std::filesystem::path(artifactsDir);
+    if (!std::filesystem::exists(root, error)) return;
+
+    for (const auto& entry : std::filesystem::recursive_directory_iterator(root, std::filesystem::directory_options::skip_permission_denied, error)) {
+        if (error) { error.clear(); continue; }
+        if (!entry.is_regular_file(error)) continue;
+
+        const auto filename = entry.path().filename().string();
+        const auto len = std::strlen(suffix);
+        if (filename.size() >= len && filename.compare(filename.size() - len, len, suffix) == 0) {
+            std::filesystem::remove(entry.path(), error);
+            if (error) error.clear();
+        }
+    }
 }
 
 static void _loadFonts()
@@ -66,6 +83,14 @@ static bool _saveDrawTest(TestCanvas* canvas, tvgdraw::DrawTest* drawTest, const
     return drawTest->draw(canvas->ptr()) && PngSaver(drawTest->width).save(canvas, filename);
 }
 
+static bool _passed(const TestResult& result)
+{
+    for (const auto& backend : result.backends) {
+        if (backend.summary.different > 0 || backend.summary.failed > 0) return false;
+    }
+    return true;
+}
+
 Runner::Runner(const TestConfig& config) : config(config)
 {
     std::error_code error;
@@ -78,45 +103,32 @@ Runner::Runner(const TestConfig& config) : config(config)
 
     // LOG options
     LOG("RUNNER", "Target resource directory: %s", config.resourceTargetDir.c_str());
-    LOG("RUNNER", "Reference directory: %s", config.referenceDir.c_str());
-    LOG("RUNNER", "Test directory: %s", config.testDir.c_str());
-    LOG("RUNNER", "Report directory: %s", config.reportDir.c_str());
-    LOG("RUNNER", "Report format: %s", config.reportFormat.c_str());
-    LOG("RUNNER", "Evaluator: %s", evaluatorName(config.evaluatorType));
+    LOG("RUNNER", "Artifacts directory: %s", config.artifactsDir.c_str());
     LOG("RUNNER", "PNG max width: %u", config.maxWidth);
-    switch (config.evaluatorType) {
-        case EvaluatorType::Pixel: {
-            LOG("RUNNER", "Pixel channel threshold: %u", config.pixel.channelThreshold);
-            LOG("RUNNER", "Pixel surface diff ratio threshold: %.6f", config.pixel.surfaceDiffRatioThreshold);
-            LOG("RUNNER", "Pixel background ratio: %.6f", config.pixel.backgroundRatio);
-            break;
-        }
-        case EvaluatorType::Flip: {
-            LOG("RUNNER", "FLIP surface mean threshold: %.6f", config.flip.surfaceMeanThreshold);
-            LOG("RUNNER", "FLIP surface error floor threshold: %.6f", config.flip.surfaceErrorFloorThreshold);
-            break;
-        }
-    }
+    LOG("RUNNER", "Max-channel distance threshold: %u", config.threshold.maxChannelDistance);
+    LOG("RUNNER", "Effective difference ratio threshold: %.6f", config.threshold.effectiveDiffRatio);
+    LOG("RUNNER", "Outlier distance threshold: %u", config.threshold.outlierDistance);
+    LOG("RUNNER", "Outlier ratio threshold: %.6f", config.threshold.outlierRatio);
     LOG("RUNNER", "Assets: %zu", assets.size());
     LOG("RUNNER", "Draw tests: %zu", tvgdraw::DrawTestRegistry::entries().size());
 
     if (config.updateReference) LOG("RUNNER", "Update reference mode enabled.");
 }
 
-void Runner::run()
+bool Runner::run()
 {
-    auto savePngAndEval = [this](const std::string& backend, TestCanvas* canvas, EvaluationQueue* evaluatorQueue) {
+    auto savePngAndEval = [this](const std::string& backend, TestCanvas* canvas, Evaluator* evaluatorQueue) {
         LOG("RUNNER", "Backend: %s", backend.c_str());
         PngSaver saver(config.maxWidth);
         for (const auto& asset : assets) {
-            auto target = _path(config.resourceTargetDir, config.testDir, backend, asset);
+            auto target = _path(config.resourceTargetDir, config.artifactsDir, backend, asset, evaluatorQueue ? "test" : "reference");
             const auto rendered = saver.save(canvas, asset.c_str(), target.string().c_str());
             if (!rendered) LOGERR("RUNNER", "Failed: %s", asset.c_str());
 
             if (!evaluatorQueue) continue;
 
-            auto reference = _path(config.resourceTargetDir, config.referenceDir, backend, asset);
-            auto diff = _path(config.resourceTargetDir, (std::filesystem::path(config.reportDir) / "diff").string(), backend, asset);
+            auto reference = _path(config.resourceTargetDir, config.artifactsDir, backend, asset, "reference");
+            auto diff = _path(config.resourceTargetDir, config.artifactsDir, backend, asset, "diff");
             evaluatorQueue->push({
                     backend,
                     asset,
@@ -129,21 +141,21 @@ void Runner::run()
         }
     };
 
-    auto saveDrawTestsAndEval = [this](const std::string& backend, TestCanvas* canvas, EvaluationQueue* evaluatorQueue) {
+    auto saveDrawTestsAndEval = [this](const std::string& backend, TestCanvas* canvas, Evaluator* evaluatorQueue) {
         const auto& drawTests = tvgdraw::DrawTestRegistry::entries();
         if (drawTests.empty()) return;
 
         LOG("RUNNER", "Draw test backend: %s", backend.c_str());
         for (const auto& entry : drawTests) {
             auto drawTest = entry.factory();
-            const auto target = _drawTestPath(config.testDir, backend, entry.name);
+            const auto target = _drawTestPath(config.artifactsDir, backend, entry.name, evaluatorQueue ? "test" : "reference");
             const auto rendered = drawTest && _saveDrawTest(canvas, drawTest.get(), target.string().c_str());
             if (!rendered) LOGERR("RUNNER", "Failed draw test: %s", entry.name);
 
             if (!evaluatorQueue) continue;
 
-            const auto reference = _drawTestPath(config.referenceDir, backend, entry.name);
-            const auto diff = _drawTestPath((std::filesystem::path(config.reportDir) / "diff").string(), backend, entry.name);
+            const auto reference = _drawTestPath(config.artifactsDir, backend, entry.name, "reference");
+            const auto diff = _drawTestPath(config.artifactsDir, backend, entry.name, "diff");
             const auto relative = (std::filesystem::path("draw_test") / entry.name).string();
             evaluatorQueue->push({
                     backend,
@@ -157,7 +169,7 @@ void Runner::run()
         }
     };
 
-    auto saveBackendAndEval = [&savePngAndEval, &saveDrawTestsAndEval](const std::string& backend, EvaluationQueue* evaluatorQueue) {
+    auto saveBackendAndEval = [&savePngAndEval, &saveDrawTestsAndEval](const std::string& backend, Evaluator* evaluatorQueue) {
         TestCanvas canvas(backend.c_str());
         if (!canvas.ptr()) {
             LOGERR("RUNNER", "Skipping backend: %s", backend.c_str());
@@ -169,35 +181,38 @@ void Runner::run()
     };
 
     auto saveReport = [this](const TestResult& result) {
-        const auto reportPath = std::filesystem::path(config.reportDir) / (config.reportFormat == "md" ? "reporter.md" : "reporter.html");
-        const auto saved = config.reportFormat == "md" ? MdSaver().save(result, config.reportDir) : HtmlSaver().save(result, config.reportDir);
+        const auto reportPath = std::filesystem::path(config.artifactsDir) / "reporter.html";
+        const auto saved = HtmlSaver().save(result, config.artifactsDir);
         if (saved) {
             LOG("RUNNER", "Report: %s", reportPath.string().c_str());
         } else {
-            LOGERR("RUNNER", "Failed to create report: %s", config.reportDir.c_str());
+            LOGERR("RUNNER", "Failed to create report: %s", config.artifactsDir.c_str());
         }
+        return saved;
     };
 
     if (config.updateReference) {
         LOG("RUNNER", "Updating references...");
+        _removeBySuffix(config.artifactsDir, ".reference.png");
+        _removeBySuffix(config.artifactsDir, ".test.png");
+        _removeBySuffix(config.artifactsDir, ".diff.png");
         std::error_code error;
-        std::filesystem::remove_all(config.referenceDir, error);
-        if (error) {
-            LOGERR("RUNNER", "Failed to remove reference directory: %s", config.referenceDir.c_str());
-            return;
-        }
-        config.testDir = config.referenceDir;
+        std::filesystem::remove(std::filesystem::path(config.artifactsDir) / "reporter.html", error);
         for (const auto& backend : config.backends) saveBackendAndEval(backend, nullptr);
         LOG("RUNNER", "References updated.");
-        return;
+        return true;
     }
 
     LOG("RUNNER", "Starting tests...");
     std::error_code error;
-    std::filesystem::remove_all(std::filesystem::path(config.reportDir) / "diff", error);
+    _removeBySuffix(config.artifactsDir, ".test.png");
+    _removeBySuffix(config.artifactsDir, ".diff.png");
+    std::filesystem::remove(std::filesystem::path(config.artifactsDir) / "reporter.html", error);
 
-    EvaluationQueue evaluatorQueue(config);
+    Evaluator evaluatorQueue(config);
     for (const auto& backend : config.backends) saveBackendAndEval(backend, &evaluatorQueue);
-    saveReport(evaluatorQueue.sync());
+    auto result = evaluatorQueue.sync();
+    const auto reportSaved = saveReport(result);
     LOG("RUNNER", "Tests completed.");
+    return reportSaved && _passed(result);
 }

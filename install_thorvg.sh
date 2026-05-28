@@ -37,6 +37,10 @@ echo "Building ThorVG..."
 ninja -C "$BUILDDIR"
 
 echo "Installing ThorVG..."
-ninja -C "$BUILDDIR" install
+if [[ -w /usr/local ]]; then
+    ninja -C "$BUILDDIR" install
+else
+    sudo ninja -C "$BUILDDIR" install
+fi
 
 echo "ThorVG installed successfully."

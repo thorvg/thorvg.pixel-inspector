@@ -63,24 +63,6 @@ static bool _support(const char* backend)
     return _equal(backend, "sw") || _equal(backend, "gl") || _equal(backend, "wg");
 }
 
-static bool _format(const char* format)
-{
-    return _equal(format, DEFAULT_REPORT_FORMAT) || _equal(format, "md");
-}
-
-static bool _evaluatorType(const char* value, EvaluatorType* evaluatorType)
-{
-    if (_equal(value, "flip")) {
-        *evaluatorType = EvaluatorType::Flip;
-        return true;
-    }
-    if (_equal(value, "pixel")) {
-        *evaluatorType = EvaluatorType::Pixel;
-        return true;
-    }
-    return false;
-}
-
 static std::string _trim(const char* begin, const char* end)
 {
     while (begin < end && std::isspace(static_cast<unsigned char>(*begin))) ++begin;
@@ -147,17 +129,12 @@ static void _help(const char* name)
     std::printf("Options:\n");
     std::printf("  --backend <sw|gl|wg>[,...]     render backend list (default: %s)\n", DEFAULT_BACKENDS_TEXT);
     std::printf("  --resource <dir>               resource directory (default: TARGET_RESOURCE_DIR)\n");
-    std::printf("  --reference <dir>              reference directory (default: REFERENCE_DIR)\n");
-    std::printf("  --test <dir>                   test directory (default: TEST_DIR)\n");
-    std::printf("  --report <dir>                 report directory (default: REPORT_DIR)\n");
-    std::printf("  --report-format <html|md>      report format (default: %s)\n", DEFAULT_REPORT_FORMAT);
-    std::printf("  --evaluator <flip|pixel>       image evaluator strategy (default: %s)\n", DEFAULT_EVALUATOR_TEXT);
+    std::printf("  --artifacts <dir>              artifacts directory (default: ARTIFACTS_DIR)\n");
     std::printf("  --max-width <px>               PNG fit cell width (default: %u)\n", DEFAULT_MAX_WIDTH);
-    std::printf("  --flip-surface-mean-threshold <value>         Alpha-surface FLIP mean threshold (default: %.3g)\n", DEFAULT_FLIP_SURFACE_MEAN_THRESHOLD);
-    std::printf("  --flip-surface-error-floor-threshold <value>  Ignore low FLIP error contribution threshold (default: %.3g)\n", DEFAULT_FLIP_SURFACE_ERROR_FLOOR_THRESHOLD);
-    std::printf("  --pixel-channel-threshold <value>        RGBA Chebyshev distance threshold (default: %u)\n", DEFAULT_PIXEL_CHANNEL_THRESHOLD);
-    std::printf("  --pixel-surface-diff-ratio-threshold <value>  Weighted surface diff ratio threshold (default: %.3g)\n", DEFAULT_PIXEL_SURFACE_DIFF_RATIO_THRESHOLD);
-    std::printf("  --pixel-background-ratio <value>        Background color detection ratio (default: %.3g)\n", DEFAULT_PIXEL_BACKGROUND_RATIO);
+    std::printf("  --max-channel-distance-threshold <value>  Max-channel distance threshold (default: %u)\n", DEFAULT_THRESHOLD_MAX_CHANNEL_DISTANCE);
+    std::printf("  --effective-diff-ratio-threshold <value>  Effective difference ratio threshold (default: %.3g)\n", DEFAULT_THRESHOLD_EFFECTIVE_DIFF_RATIO);
+    std::printf("  --outlier-distance-threshold <value>  Outlier distance threshold (default: %u)\n", DEFAULT_PIXEL_OUTLIER_DISTANCE_THRESHOLD);
+    std::printf("  --outlier-ratio-threshold <value>  Clustered outlier ratio threshold (default: %.3g)\n", DEFAULT_PIXEL_OUTLIER_RATIO_THRESHOLD);
     std::printf("  --update-reference             update references\n");
     std::printf("  --help                         print this message\n");
 }
@@ -172,38 +149,27 @@ static bool _parse(int argc, char** argv, TestConfig* config, bool* done)
         } else if (_next(argc, argv, &i, "--resource", &value)) {
             if (*value == '\0') return false;
             config->resourceTargetDir = value;
-        } else if (_next(argc, argv, &i, "--reference", &value)) {
+        } else if (_next(argc, argv, &i, "--artifacts", &value)) {
             if (*value == '\0') return false;
-            config->referenceDir = value;
-        } else if (_next(argc, argv, &i, "--test", &value)) {
-            if (*value == '\0') return false;
-            config->testDir = value;
-        } else if (_next(argc, argv, &i, "--report", &value)) {
-            if (*value == '\0') return false;
-            config->reportDir = value;
-        } else if (_next(argc, argv, &i, "--report-format", &value)) {
-            if (!_format(value)) return false;
-            config->reportFormat = value;
-        } else if (_next(argc, argv, &i, "--evaluator", &value)) {
-            if (!_evaluatorType(value, &config->evaluatorType)) return false;
+            config->artifactsDir = value;
         } else if (_next(argc, argv, &i, "--max-width", &value)) {
             if (!_uint32(value, &config->maxWidth)) return false;
             if (config->maxWidth == 0) return false;
-        } else if (_next(argc, argv, &i, "--pixel-channel-threshold", &value) || _next(argc, argv, &i, "--pixel_channel_threshold", &value)) {
-            if (!_uint32(value, &config->pixel.channelThreshold)) return false;
-            if (config->pixel.channelThreshold > 255) return false;
-        } else if (_next(argc, argv, &i, "--pixel-surface-diff-ratio-threshold", &value) || _next(argc, argv, &i, "--pixel_surface_diff_ratio_threshold", &value)) {
-            if (!_float(value, &config->pixel.surfaceDiffRatioThreshold)) return false;
-            if (config->pixel.surfaceDiffRatioThreshold > 1.0f) return false;
-        } else if (_next(argc, argv, &i, "--pixel-background-ratio", &value) || _next(argc, argv, &i, "--pixel_background_ratio", &value)) {
-            if (!_float(value, &config->pixel.backgroundRatio)) return false;
-            if (config->pixel.backgroundRatio > 1.0f) return false;
-        } else if (_next(argc, argv, &i, "--flip-surface-mean-threshold", &value) || _next(argc, argv, &i, "--flip_surface_mean_threshold", &value)
-                   || _next(argc, argv, &i, "--surface-mean-threshold", &value) || _next(argc, argv, &i, "--surface_mean_threshold", &value)) {
-            if (!_float(value, &config->flip.surfaceMeanThreshold)) return false;
-        } else if (_next(argc, argv, &i, "--flip-surface-error-floor-threshold", &value) || _next(argc, argv, &i, "--flip_surface_error_floor_threshold", &value)
-                   || _next(argc, argv, &i, "--surface-error-floor-threshold", &value) || _next(argc, argv, &i, "--surface_error_floor_threshold", &value)) {
-            if (!_float(value, &config->flip.surfaceErrorFloorThreshold)) return false;
+        } else if (_next(argc, argv, &i, "--max-channel-distance-threshold", &value) ||
+                   _next(argc, argv, &i, "--max_channel_distance_threshold", &value)) {
+            if (!_uint32(value, &config->threshold.maxChannelDistance)) return false;
+            if (config->threshold.maxChannelDistance > 255) return false;
+        } else if (_next(argc, argv, &i, "--effective-diff-ratio-threshold", &value) ||
+                   _next(argc, argv, &i, "--effective_diff_ratio_threshold", &value)) {
+            if (!_float(value, &config->threshold.effectiveDiffRatio)) return false;
+            if (config->threshold.effectiveDiffRatio > 1.0f) return false;
+        } else if (_next(argc, argv, &i, "--outlier-distance-threshold", &value) ||
+                   _next(argc, argv, &i, "--outlier_distance_threshold", &value)) {
+            if (!_uint32(value, &config->threshold.outlierDistance)) return false;
+            if (config->threshold.outlierDistance > 255) return false;
+        } else if (_next(argc, argv, &i, "--outlier-ratio-threshold", &value) || _next(argc, argv, &i, "--outlier_ratio_threshold", &value)) {
+            if (!_float(value, &config->threshold.outlierRatio)) return false;
+            if (config->threshold.outlierRatio > 1.0f) return false;
         } else if (_equal(argv[i], "--update-reference")) {
             config->updateReference = true;
         } else if (_equal(argv[i], "--help") || _equal(argv[i], "-h")) {
@@ -229,9 +195,9 @@ int main(int argc, char** argv)
     }
 
     const auto start = std::chrono::steady_clock::now();
-    Runner(config).run();
+    const auto passed = Runner(config).run();
     const auto elapsed = std::chrono::duration<double>(std::chrono::steady_clock::now() - start).count();
     LOG("MAIN", "Elapsed: %.3f seconds", elapsed);
 
-    return 0;
+    return passed ? 0 : 1;
 }

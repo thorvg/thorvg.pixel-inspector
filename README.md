@@ -8,8 +8,8 @@
 </p>
 
 **Pixel Inspector** is a rendering inspection tool for ThorVG. It renders
-SVG and Lottie assets and compares generated PNGs against references with
-NVIDIA FLIP or a weighted RGBA pixel diff evaluator.
+SVG and Lottie assets and compares generated PNGs against references with a
+weighted RGBA pixel diff evaluator.
 
 ## Features
 
@@ -18,8 +18,8 @@ NVIDIA FLIP or a weighted RGBA pixel diff evaluator.
 </p>
 
 - Renders SVG and Lottie assets with ThorVG backends.
-- Compares rendered PNGs against references with NVIDIA FLIP or weighted RGBA pixel diff.
-- Provides HTML or Markdown reports.
+- Compares rendered PNGs against references with weighted RGBA pixel diff.
+- Provides HTML reports.
 
 ## Requirements
 
@@ -43,14 +43,14 @@ meson setup builddir
 meson compile -C builddir
 ```
 
-By default, resources are read from `res` and generated files are written under `artifacts`.
+By default, target resources are read from `res/target` and generated files are
+written under `artifacts`.
 
 ## Usage
 
 ```sh
 ./builddir/src/tvg-pixel-inspector --backend=sw
 ./builddir/src/tvg-pixel-inspector --backend="gl,wg,sw"
-./builddir/src/tvg-pixel-inspector --evaluator=pixel --backend=sw
 ./builddir/src/tvg-pixel-inspector --update-reference --backend="gl,wg,sw"
 ```
 
@@ -68,10 +68,10 @@ Helper scripts are also available:
 all arguments to the executable.
 
 ```sh
-./update_and_run.sh v1.0.5 main
+./update_and_evaluate.sh v1.0.5 main
 ```
 
-`update_and_run.sh` takes two ThorVG refs. The first ref is used to install
+`update_and_evaluate.sh` takes two ThorVG refs. The first ref is used to install
 ThorVG and update the reference images. The second ref is then installed and
 compared against those references.
 
@@ -81,37 +81,24 @@ compared against those references.
 | --- | --- |
 | `--backend=<list>` | Render backend list. |
 | `--resource=<dir>` | Resource directory. |
-| `--reference=<dir>` | Reference directory. |
-| `--test=<dir>` | Test output directory. |
-| `--report=<dir>` | Report output directory. |
-| `--report-format=<html\|md>` | Report format. |
-| `--evaluator=<flip\|pixel>` | Image comparison strategy. |
+| `--artifacts=<dir>` | Artifacts directory. |
 | `--max-width=<px>` | PNG fit cell width. Images are scaled to fit this box while preserving aspect ratio. |
-| `--flip-surface-mean-threshold=<value>` | Alpha-surface FLIP mean threshold. |
-| `--flip-surface-error-floor-threshold=<value>` | Error contribution ignored per alpha-surface FLIP threshold. |
-| `--pixel-channel-threshold=<value>` | RGBA Chebyshev distance threshold for the pixel evaluator. |
-| `--pixel-surface-diff-ratio-threshold=<value>` | Weighted surface diff ratio threshold for the pixel evaluator. |
-| `--pixel-background-ratio=<value>` | Repeated visible color ratio used for common background detection. |
+| `--max-channel-distance-threshold=<value>` | Max-channel distance threshold. |
+| `--effective-diff-ratio-threshold=<value>` | Effective difference ratio threshold. |
+| `--outlier-distance-threshold=<value>` | Outlier distance threshold. |
+| `--outlier-ratio-threshold=<value>` | Clustered outlier ratio threshold. |
 | `--update-reference` | Update references. |
 | `--help` | Print command line help. |
 
 ### Evaluator
 
-When `--evaluator=pixel` is selected:
-
 - Pixels are compared by RGBA Chebyshev distance, which uses the largest channel
   delta among R, G, B, and A.
-- Transparent pixels and detected common background pixels are excluded from the
-  comparison surface.
-- An image is marked as different when its weighted surface diff ratio reaches
-  `--pixel-surface-diff-ratio-threshold`.
-
-When `--evaluator=flip` is selected:
-
-- Images are compared with NVIDIA FLIP error metrics.
-- Fully transparent pixels are excluded from the visible surface measurement.
-- An image is marked as different when the adjusted surface mean reaches
-  `--flip-surface-mean-threshold`.
+- Effective pixels exclude fully transparent pixels and detected common
+  background pixels.
+- An image is marked as different when its effective difference ratio reaches
+  `--effective-diff-ratio-threshold`, or when its clustered outlier ratio reaches
+  `--outlier-ratio-threshold`.
 
 ### Draw Tests
 
@@ -136,37 +123,44 @@ Current draw tests cover shapes, paths, gradients, gradient strokes, fill rules,
 fill spread modes, scenes, opacity, trim paths, text layout, raw picture tiling,
 SVG pictures, and clipping.
 
-## Output Layout
+## Output
 
 ```text
 artifacts/
-  reference/
-    <backend>/
-      draw_test/
-      lottie/
-      svg/
-  test/
-    <backend>/
-      draw_test/
-      lottie/
-      svg/
-  report/
-    reporter.html or reporter.md
-    data.json
-    diff/
-      <backend>/
-        draw_test/
-        lottie/
-        svg/
+  reporter.html
+  draw_test/
+    viewport.gl.reference.png
+    viewport.gl.test.png
+    viewport.gl.diff.png
+    viewport.wg.reference.png
+    viewport.wg.test.png
+    viewport.wg.diff.png
+    viewport.sw.reference.png
+    viewport.sw.test.png
+    viewport.sw.diff.png
+    ...
+  lottie/
+    sample.gl.reference.png
+    sample.gl.test.png
+    sample.gl.diff.png
+    sample.sw.reference.png
+    ...
+  svg/
+    logo.gl.reference.png
+    logo.gl.test.png
+    logo.gl.diff.png
+    logo.gl.sw.png
+    ...
 ```
 
-The report file is `reporter.html` for HTML output and `reporter.md` for Markdown output.
-Test and reference paths use each asset path relative to the resource directory:
+The report file is written directly under the artifacts directory.
+Generated image paths use each asset path relative to the resource directory:
 
 ```text
 res/target/lottie/sample.json
-  -> artifacts/test/sw/lottie/sample.png
-  -> artifacts/reference/sw/lottie/sample.png
+  -> artifacts/lottie/sample.sw.reference.png
+  -> artifacts/lottie/sample.sw.test.png
+  -> artifacts/lottie/sample.sw.diff.png
 ```
 
 ## Resources
@@ -182,9 +176,6 @@ Use `--resource <dir>` to run another target resource directory.
 
 Pixel Inspector is distributed under the MIT license. See [LICENSE](LICENSE).
 
-This project includes NVIDIA FLIP as `src/external/nv_flip.h`. The vendored header
-retains its BSD-3-Clause license notice and is used without CUDA support.
-
 PNG encoding and decoding use lodepng. lodepng is distributed under the zlib
-license, and its license notice is retained in `src/external/lodepng.h` and
-`src/external/lodepng.cpp`.
+license, and its license notice is retained in `src/saver/lodepng.h` and
+`src/saver/lodepng.cpp`.

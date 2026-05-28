@@ -12,6 +12,4 @@ doc
 .DS_Store
 temp
 compile_commands.json
-artifacts/report/*
-artifacts/test/*
-artifacts/reference/*
+artifacts/*

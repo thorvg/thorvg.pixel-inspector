@@ -30,7 +30,7 @@ class Runner
 {
 public:
     explicit Runner(const TestConfig& config);
-    void run();
+    bool run();
 
 private:
     TestConfig config;

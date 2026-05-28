@@ -22,7 +22,6 @@
 
 #include <algorithm>
 #include <cstdint>
-#include <cstdio>
 #include <cstdlib>
 #include <cmath>
 #include <cstring>
@@ -47,8 +46,15 @@ struct Size
     uint32_t h = 0;
 };
 
-bool _encodeFile(const char* filename, const uint8_t* buffer, uint32_t w, uint32_t h, LodePNGColorType colorType)
+bool _encode(const char* filename, const uint8_t* buffer, uint32_t w, uint32_t h, LodePNGColorType colorType)
 {
+    std::error_code filesystemError;
+    const auto parent = std::filesystem::path(filename).parent_path();
+    if (!parent.empty()) {
+        std::filesystem::create_directories(parent, filesystemError);
+        if (filesystemError) return false;
+    }
+
     LodePNGState state;
     lodepng_state_init(&state);
     state.encoder.auto_convert = 0;
@@ -59,24 +65,12 @@ bool _encodeFile(const char* filename, const uint8_t* buffer, uint32_t w, uint32
 
     uint8_t* png = nullptr;
     size_t pngSize = 0;
-    auto error = lodepng_encode(&png, &pngSize, buffer, w, h, &state);
-    if (!error) error = lodepng_save_file(png, pngSize, filename);
+    auto pngError = lodepng_encode(&png, &pngSize, buffer, w, h, &state);
+    if (!pngError) pngError = lodepng_save_file(png, pngSize, filename);
 
     lodepng_state_cleanup(&state);
     std::free(png);
-    return error == 0;
-}
-
-bool _encode(const char* filename, const uint8_t* buffer, uint32_t w, uint32_t h, LodePNGColorType colorType)
-{
-    std::error_code error;
-    const auto parent = std::filesystem::path(filename).parent_path();
-    if (!parent.empty()) {
-        std::filesystem::create_directories(parent, error);
-        if (error) return false;
-    }
-
-    return _encodeFile(filename, buffer, w, h, colorType);
+    return pngError == 0;
 }
 
 bool _resize(TestCanvas* canvas, Picture* picture, Size maxSize)
@@ -99,58 +93,9 @@ bool _resize(TestCanvas* canvas, Picture* picture, Size maxSize)
 
 bool _renderFrame(TestCanvas* canvas, Picture* picture)
 {
-    if (!canvas->clear()) return false;
-
-    if (canvas->ptr()->add(picture) != Result::Success) return false;
-    return canvas->render();
+    return canvas->clear() && canvas->ptr()->add(picture) == Result::Success && canvas->render();
 }
 
-}
-
-std::vector<uint8_t> toRGB8(const uint8_t* rgba, uint32_t w, uint32_t h)
-{
-    std::vector<uint8_t> rgb(static_cast<size_t>(w) * h * 3);
-    auto src = rgba;
-    auto dst = rgb.data();
-    const auto count = w * h;
-    for (uint32_t i = 0; i < count; ++i) {
-        const auto a = static_cast<uint32_t>(src[3]);
-        dst[0] = static_cast<uint8_t>((static_cast<uint32_t>(src[0]) * a + 255u * (255u - a) + 127u) / 255u);
-        dst[1] = static_cast<uint8_t>((static_cast<uint32_t>(src[1]) * a + 255u * (255u - a) + 127u) / 255u);
-        dst[2] = static_cast<uint8_t>((static_cast<uint32_t>(src[2]) * a + 255u * (255u - a) + 127u) / 255u);
-        src += 4;
-        dst += 3;
-    }
-    return rgb;
-}
-
-std::vector<float> normalizeRGB(const std::vector<uint8_t>& rgb8)
-{
-    std::vector<float> rgb(rgb8.size());
-    for (size_t i = 0, n = rgb8.size(); i < n; ++i) {
-        rgb[i] = static_cast<float>(rgb8[i]) / 255.0f;
-    }
-    return rgb;
-}
-
-bool loadRGBA(const char* filename, PngImage* image)
-{
-    uint8_t* buffer = nullptr;
-    unsigned w = 0;
-    unsigned h = 0;
-    if (lodepng_decode32_file(&buffer, &w, &h, filename) != 0) return false;
-
-    image->w = w;
-    image->h = h;
-    image->pixels.assign(buffer, buffer + static_cast<size_t>(w) * h * 4);
-
-    std::free(buffer);
-    return true;
-}
-
-bool saveRGBA(const char* filename, const uint8_t* pixels, uint32_t w, uint32_t h)
-{
-    return _encode(filename, pixels, w, h, LCT_RGBA);
 }
 
 bool PngSaver::save(TestCanvas* canvas, const char* asset, const char* filename)
@@ -187,7 +132,7 @@ bool PngSaver::save(TestCanvas* canvas, Picture* picture, const char* filename)
     }
 
     picture->ref();
-    const auto ret = _renderFrame(canvas, picture) && saveRGBA(filename, canvas->buffer(), canvas->width, canvas->height);
+    const auto ret = _renderFrame(canvas, picture) && _encode(filename, canvas->buffer(), canvas->width, canvas->height, LCT_RGBA);
     const auto cleared = canvas->clear();
     picture->unref();
     return ret && cleared;
@@ -196,7 +141,7 @@ bool PngSaver::save(TestCanvas* canvas, Picture* picture, const char* filename)
 bool PngSaver::save(TestCanvas* canvas, const char* filename)
 {
     if (!canvas->render()) return false;
-    return saveRGBA(filename, canvas->buffer(), canvas->width, canvas->height);
+    return _encode(filename, canvas->buffer(), canvas->width, canvas->height, LCT_RGBA);
 }
 
 bool PngSaver::save(TestCanvas* canvas, Animation* animation, const char* filename)
@@ -228,5 +173,5 @@ bool PngSaver::save(TestCanvas* canvas, Animation* animation, const char* filena
         canvas->clear();
     }
 
-    return saveRGBA(filename, buffer.data(), output, output);
+    return _encode(filename, buffer.data(), output, output, LCT_RGBA);
 }

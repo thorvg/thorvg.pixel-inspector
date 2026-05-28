@@ -23,9 +23,7 @@
 #ifndef _TVG_PIXEL_INSPECTOR_PNG_SAVER_H_
 #define _TVG_PIXEL_INSPECTOR_PNG_SAVER_H_
 
-#include <cstddef>
 #include <cstdint>
-#include <vector>
 
 namespace tvg
 {
@@ -34,18 +32,6 @@ struct Picture;
 }
 
 struct TestCanvas;
-
-struct PngImage
-{
-    uint32_t w = 0;
-    uint32_t h = 0;
-    std::vector<uint8_t> pixels;
-};
-
-std::vector<uint8_t> toRGB8(const uint8_t* rgba, uint32_t w, uint32_t h);
-std::vector<float> normalizeRGB(const std::vector<uint8_t>& rgb8);
-bool loadRGBA(const char* filename, PngImage* image);
-bool saveRGBA(const char* filename, const uint8_t* pixels, uint32_t w, uint32_t h);
 
 struct PngSaver
 {
