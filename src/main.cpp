@@ -132,9 +132,7 @@ static void _help(const char* name)
     std::printf("  --artifacts <dir>              artifacts directory (default: ARTIFACTS_DIR)\n");
     std::printf("  --max-width <px>               PNG fit cell width (default: %u)\n", DEFAULT_MAX_WIDTH);
     std::printf("  --max-channel-distance-threshold <value>  Max-channel distance threshold (default: %u)\n", DEFAULT_THRESHOLD_MAX_CHANNEL_DISTANCE);
-    std::printf("  --effective-diff-ratio-threshold <value>  Effective difference ratio threshold (default: %.3g)\n", DEFAULT_THRESHOLD_EFFECTIVE_DIFF_RATIO);
-    std::printf("  --outlier-distance-threshold <value>  Outlier distance threshold (default: %u)\n", DEFAULT_PIXEL_OUTLIER_DISTANCE_THRESHOLD);
-    std::printf("  --outlier-ratio-threshold <value>  Clustered outlier ratio threshold (default: %.3g)\n", DEFAULT_PIXEL_OUTLIER_RATIO_THRESHOLD);
+    std::printf("  --diff-ratio-threshold <value>  Diff ratio threshold (default: %.3g)\n", DEFAULT_THRESHOLD_DIFF_RATIO);
     std::printf("  --update-reference             update references\n");
     std::printf("  --help                         print this message\n");
 }
@@ -159,17 +157,10 @@ static bool _parse(int argc, char** argv, TestConfig* config, bool* done)
                    _next(argc, argv, &i, "--max_channel_distance_threshold", &value)) {
             if (!_uint32(value, &config->threshold.maxChannelDistance)) return false;
             if (config->threshold.maxChannelDistance > 255) return false;
-        } else if (_next(argc, argv, &i, "--effective-diff-ratio-threshold", &value) ||
-                   _next(argc, argv, &i, "--effective_diff_ratio_threshold", &value)) {
-            if (!_float(value, &config->threshold.effectiveDiffRatio)) return false;
-            if (config->threshold.effectiveDiffRatio > 1.0f) return false;
-        } else if (_next(argc, argv, &i, "--outlier-distance-threshold", &value) ||
-                   _next(argc, argv, &i, "--outlier_distance_threshold", &value)) {
-            if (!_uint32(value, &config->threshold.outlierDistance)) return false;
-            if (config->threshold.outlierDistance > 255) return false;
-        } else if (_next(argc, argv, &i, "--outlier-ratio-threshold", &value) || _next(argc, argv, &i, "--outlier_ratio_threshold", &value)) {
-            if (!_float(value, &config->threshold.outlierRatio)) return false;
-            if (config->threshold.outlierRatio > 1.0f) return false;
+        } else if (_next(argc, argv, &i, "--diff-ratio-threshold", &value) ||
+                   _next(argc, argv, &i, "--diff_ratio_threshold", &value)) {
+            if (!_float(value, &config->threshold.diffRatio)) return false;
+            if (config->threshold.diffRatio > 1.0f) return false;
         } else if (_equal(argv[i], "--update-reference")) {
             config->updateReference = true;
         } else if (_equal(argv[i], "--help") || _equal(argv[i], "-h")) {

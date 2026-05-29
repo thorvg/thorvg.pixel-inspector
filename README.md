@@ -85,10 +85,8 @@ compared against those references.
 | `--resource=<dir>` | Resource directory. |
 | `--artifacts=<dir>` | Artifacts directory. |
 | `--max-width=<px>` | PNG fit cell width. Images are scaled to fit this box while preserving aspect ratio. |
-| `--max-channel-distance-threshold=<value>` | Max-channel distance threshold. |
-| `--effective-diff-ratio-threshold=<value>` | Effective difference ratio threshold. |
-| `--outlier-distance-threshold=<value>` | Outlier distance threshold. |
-| `--outlier-ratio-threshold=<value>` | Clustered outlier ratio threshold. |
+| `--max-channel-distance-threshold=<value>` | Max-channel distance threshold. A pixel counts as different when its RGBA Chebyshev distance exceeds this. Default `0`. |
+| `--diff-ratio-threshold=<value>` | Diff ratio threshold. An image is marked different when its diff ratio exceeds this. Default `0`. |
 | `--update-reference` | Update references. |
 | `--help` | Print command line help. |
 
@@ -96,11 +94,16 @@ compared against those references.
 
 - Pixels are compared by RGBA Chebyshev distance, which uses the largest channel
   delta among R, G, B, and A.
-- Effective pixels exclude fully transparent pixels and detected common
-  background pixels.
-- An image is marked as different when its effective difference ratio reaches
-  `--effective-diff-ratio-threshold`, or when its clustered outlier ratio reaches
-  `--outlier-ratio-threshold`.
+- Fully transparent pixels (alpha 0 in both the reference and the test) are
+  excluded; every other pixel is compared.
+- A pixel counts as different when its distance exceeds
+  `--max-channel-distance-threshold` (default `0`, so any non-identical pixel
+  counts).
+- An image is marked as different when its diff ratio exceeds
+  `--diff-ratio-threshold` (default `0`, so a single differing pixel fails the
+  image). These defaults make comparisons strict.
+- The report also lists `Diff Pixel Count`, the number of differing pixels in
+  each comparison.
 
 ### Draw Tests
 

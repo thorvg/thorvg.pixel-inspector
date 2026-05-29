@@ -33,7 +33,6 @@ namespace
 
 // Evaluator::metrics() defines the first metric as the primary report metric.
 constexpr size_t PrimaryMetric = 0;
-constexpr size_t ClusteredOutlierMetric = 1;
 
 std::string _html(const std::string& text)
 {
@@ -140,26 +139,20 @@ tr[hidden] { display: none; }
 
 static constexpr auto Script = R"JS(
 (() => {
-  const effectiveThreshold = document.getElementById('effective-threshold');
-  const effectiveThresholdValue = document.getElementById('effective-threshold-value');
-  const clusteredThreshold = document.getElementById('clustered-threshold');
-  const clusteredThresholdValue = document.getElementById('clustered-threshold-value');
+  const diffThreshold = document.getElementById('diff-threshold');
+  const diffThresholdValue = document.getElementById('diff-threshold-value');
   const visibleCount = document.getElementById('visible-count');
-  const rows = [...document.querySelectorAll('tr[data-effective-diff-ratio]')];
+  const rows = [...document.querySelectorAll('tr[data-diff-ratio]')];
   const summaries = [...document.querySelectorAll('summary[data-total]')];
 
   const applyThreshold = () => {
-    const effectiveValue = Number.parseFloat(effectiveThreshold.value);
-    const clusteredValue = Number.parseFloat(clusteredThreshold.value);
-    const effectiveLimit = Number.isFinite(effectiveValue) ? effectiveValue : 0;
-    const clusteredLimit = Number.isFinite(clusteredValue) ? clusteredValue : 0;
-    effectiveThresholdValue.textContent = effectiveLimit.toFixed(4).replace(/0+$/, '').replace(/\.$/, '');
-    clusteredThresholdValue.textContent = clusteredLimit.toFixed(4).replace(/0+$/, '').replace(/\.$/, '');
+    const diffValue = Number.parseFloat(diffThreshold.value);
+    const diffLimit = Number.isFinite(diffValue) ? diffValue : 0;
+    diffThresholdValue.textContent = diffLimit.toFixed(4).replace(/0+$/, '').replace(/\.$/, '');
     let visible = 0;
     summaries.forEach((summary) => summary.dataset.shownCount = '0');
     rows.forEach((row) => {
-      const show = Number.parseFloat(row.dataset.effectiveDiffRatio) >= effectiveLimit ||
-                   Number.parseFloat(row.dataset.clusteredOutlierRatio) > clusteredLimit;
+      const show = Number.parseFloat(row.dataset.diffRatio) >= diffLimit;
       row.hidden = !show;
       if (show) {
         ++visible;
@@ -172,8 +165,7 @@ static constexpr auto Script = R"JS(
     });
     visibleCount.textContent = visible;
   };
-  effectiveThreshold.addEventListener('input', applyThreshold);
-  clusteredThreshold.addEventListener('input', applyThreshold);
+  diffThreshold.addEventListener('input', applyThreshold);
   applyThreshold();
 
   const inspector = document.getElementById('pixel-inspector');
@@ -310,14 +302,12 @@ void _writeSummary(std::ofstream& report, const TestResult& result)
 void _writeFilter(std::ofstream& report, const TestResult& result)
 {
     report << "<section class=\"panel filter\">";
-    report << "<label>Effective Diff Ratio<input id=\"effective-threshold\" type=\"range\" min=\"0\" max=\"1\" step=\"0.0005\" value=\"" << result.config.threshold.effectiveDiffRatio << "\"></label>";
-    report << "<output id=\"effective-threshold-value\" for=\"effective-threshold\">" << result.config.threshold.effectiveDiffRatio << "</output>";
-    report << "<label>Clustered Outlier Ratio<input id=\"clustered-threshold\" type=\"range\" min=\"0\" max=\"1\" step=\"0.0005\" value=\"" << result.config.threshold.outlierRatio << "\"></label>";
-    report << "<output id=\"clustered-threshold-value\" for=\"clustered-threshold\">" << result.config.threshold.outlierRatio << "</output>";
-    report << "<span class=\"muted\">visible <strong id=\"visible-count\">0</strong>. Rows are shown when either threshold condition matches.</span>";
+    report << "<label>Diff Ratio<input id=\"diff-threshold\" type=\"range\" min=\"0\" max=\"1\" step=\"0.0005\" value=\"" << result.config.threshold.diffRatio << "\"></label>";
+    report << "<output id=\"diff-threshold-value\" for=\"diff-threshold\">" << result.config.threshold.diffRatio << "</output>";
+    report << "<span class=\"muted\">visible <strong id=\"visible-count\">0</strong>. Rows are shown when the diff ratio reaches the threshold.</span>";
     report << "<ul class=\"muted\">";
-    report << "<li><strong>Effective Diff Ratio</strong>: difference ratio over effective pixels, excluding fully transparent pixels and common background pixels.</li>";
-    report << "<li><strong>Clustered Outlier Ratio</strong>: share of difference from high-error pixels near other high-error pixels.</li>";
+    report << "<li><strong>Diff Ratio</strong>: difference ratio over visible pixels, excluding fully transparent pixels.</li>";
+    report << "<li><strong>Diff Pixel Count</strong>: number of visible pixels whose channel distance exceeds the max-channel distance threshold.</li>";
     report << "</ul>";
     report << "</section>";
 }
@@ -369,8 +359,7 @@ void _writeBackend(std::ofstream& report, const TestResult& result, const TestRe
     _writeMetricHeader(report, result);
     report << "</tr></thead><tbody>";
     for (const auto& comparison : comparisons) {
-        report << "<tr data-effective-diff-ratio=\"" << _metricValue(comparison, PrimaryMetric)
-               << "\" data-clustered-outlier-ratio=\"" << _metricValue(comparison, ClusteredOutlierMetric) << "\">";
+        report << "<tr data-diff-ratio=\"" << _metricValue(comparison, PrimaryMetric) << "\">";
         report << "<td class=\"status " << (comparison.different ? "diff" : "pass") << "\" data-label=\"status\">" << (comparison.different ? "diff" : "pass") << "</td>";
         report << "<td class=\"asset\" data-label=\"asset\">" << _html(comparison.asset) << "</td>";
         _writeImage(report, reportPath, comparison.reference, "reference");

@@ -106,9 +106,7 @@ Runner::Runner(const TestConfig& config) : config(config)
     LOG("RUNNER", "Artifacts directory: %s", config.artifactsDir.c_str());
     LOG("RUNNER", "PNG max width: %u", config.maxWidth);
     LOG("RUNNER", "Max-channel distance threshold: %u", config.threshold.maxChannelDistance);
-    LOG("RUNNER", "Effective difference ratio threshold: %.6f", config.threshold.effectiveDiffRatio);
-    LOG("RUNNER", "Outlier distance threshold: %u", config.threshold.outlierDistance);
-    LOG("RUNNER", "Outlier ratio threshold: %.6f", config.threshold.outlierRatio);
+    LOG("RUNNER", "Diff ratio threshold: %.6f", config.threshold.diffRatio);
     LOG("RUNNER", "Assets: %zu", assets.size());
     LOG("RUNNER", "Draw tests: %zu", tvgdraw::DrawTestRegistry::entries().size());
 
