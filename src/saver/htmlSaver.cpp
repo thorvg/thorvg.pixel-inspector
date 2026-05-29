@@ -85,6 +85,8 @@ h2 { margin: 24px 0 10px; font-size: 17px; }
 .toolbar label { display: grid; gap: 4px; font-size: 11px; font-weight: 700; text-transform: uppercase; }
 .toolbar input[type=range] { width: 220px; height: 32px; padding: 0; accent-color: #0969da; }
 #diff-threshold-value { display: inline-block; min-width: 52px; font-variant-numeric: tabular-nums; }
+.toolbar input[type=search] { height: 32px; min-width: 200px; padding: 0 10px; border: 1px solid #d0d7de; border-radius: 6px; background: #fff; }
+.toolbar input[type=search].invalid { border-color: #cf222e; }
 .tabs { display: inline-flex; gap: 4px; margin-right: auto; }
 .tab, #only-diff-toggle, #theme-toggle { height: 32px; padding: 0 14px; border: 1px solid #d0d7de; border-radius: 6px; background: #f6f8fa; font-weight: 700; cursor: pointer; }
 .tab { text-transform: uppercase; }
@@ -96,6 +98,7 @@ body.dark th, body.dark td { border-color: #30363d; }
 body.dark .images { background: #161b22; }
 body.dark .muted, body.dark th, body.dark .coord, body.dark .pixel-inspector b { color: #8b949e; }
 body.dark .tab[aria-selected="true"], body.dark #only-diff-toggle[aria-pressed="true"] { background: #1f6feb; border-color: #1f6feb; color: #fff; }
+body.dark .toolbar input[type=search] { background: #0d1117; border-color: #30363d; color: #c9d1d9; }
 body.dark .pixel-inspector { background: #161b22; border-color: #30363d; }
 body.dark .pixel-inspector canvas { background: #161b22; border-color: #30363d; }
 summary { display: inline-flex; margin-bottom: 8px; padding: 6px 10px; border: 1px solid #d0d7de; border-radius: 4px; background: #f0f3f6; font-weight: 700; cursor: pointer; }
@@ -157,6 +160,7 @@ static constexpr auto Script = R"JS(
   const diffThresholdValue = document.getElementById('diff-threshold-value');
   const onlyDiffToggle = document.getElementById('only-diff-toggle');
   const themeToggle = document.getElementById('theme-toggle');
+  const assetSearch = document.getElementById('asset-search');
   const visibleCount = document.getElementById('visible-count');
   const rows = [...document.querySelectorAll('tr[data-diff-ratio]')];
   const summaries = [...document.querySelectorAll('summary[data-total]')];
@@ -168,13 +172,21 @@ static constexpr auto Script = R"JS(
     const diffLimit = Number.isFinite(diffValue) ? diffValue : 0;
     const onlyDiff = onlyDiffToggle.getAttribute('aria-pressed') === 'true';
     diffThresholdValue.textContent = diffLimit.toFixed(4);
+    let search = null;
+    if (assetSearch.value) {
+      try { search = new RegExp(assetSearch.value, 'i'); assetSearch.classList.remove('invalid'); }
+      catch (_) { assetSearch.classList.add('invalid'); }
+    } else {
+      assetSearch.classList.remove('invalid');
+    }
     let visible = 0;
     summaries.forEach((summary) => summary.dataset.shownCount = '0');
     rows.forEach((row) => {
       const panel = row.closest('section[data-backend]');
       const show = panel && !panel.hidden &&
                    Number.parseFloat(row.dataset.diffRatio) >= diffLimit &&
-                   (!onlyDiff || row.dataset.different === '1');
+                   (!onlyDiff || row.dataset.different === '1') &&
+                   (!search || search.test(row.dataset.asset));
       row.hidden = !show;
       if (show) {
         ++visible;
@@ -190,11 +202,12 @@ static constexpr auto Script = R"JS(
 
   const selectTab = (name) => {
     tabs.forEach((tab) => tab.setAttribute('aria-selected', String(tab.dataset.tab === name)));
-    panels.forEach((panel) => { panel.hidden = panel.dataset.backend !== name; });
+    panels.forEach((panel) => { panel.hidden = name !== 'all' && panel.dataset.backend !== name; });
     applyThreshold();
   };
 
   diffThreshold.addEventListener('input', applyThreshold);
+  assetSearch.addEventListener('input', applyThreshold);
   onlyDiffToggle.addEventListener('click', () => {
     const pressed = onlyDiffToggle.getAttribute('aria-pressed') === 'true';
     onlyDiffToggle.setAttribute('aria-pressed', String(!pressed));
@@ -343,11 +356,13 @@ void _writeToolbar(std::ofstream& report, const TestResult& result)
 {
     report << "<section class=\"panel toolbar\">";
     report << "<div class=\"tabs\" role=\"tablist\">";
-    for (size_t i = 0; i < result.backends.size(); ++i) {
-        const auto name = _html(result.backends[i].name);
-        report << "<button class=\"tab\" type=\"button\" data-tab=\"" << name << "\" aria-selected=\"" << (i == 0 ? "true" : "false") << "\">" << name << "</button>";
+    report << "<button class=\"tab\" type=\"button\" data-tab=\"all\" aria-selected=\"true\">all</button>";
+    for (const auto& backend : result.backends) {
+        const auto name = _html(backend.name);
+        report << "<button class=\"tab\" type=\"button\" data-tab=\"" << name << "\" aria-selected=\"false\">" << name << "</button>";
     }
     report << "</div>";
+    report << "<input id=\"asset-search\" type=\"search\" placeholder=\"filter asset (regex)\">";
     report << "<label>Diff Ratio<input id=\"diff-threshold\" type=\"range\" min=\"0\" max=\"1\" step=\"0.0005\" value=\"" << result.config.threshold.diffRatio << "\"></label>";
     report << "<output id=\"diff-threshold-value\" for=\"diff-threshold\">" << result.config.threshold.diffRatio << "</output>";
     report << "<button id=\"only-diff-toggle\" type=\"button\" aria-pressed=\"true\">Only diff</button>";
@@ -383,9 +398,9 @@ void _writeFailed(std::ofstream& report, const TestResult::BackendResult& backen
     report << "</ul>";
 }
 
-void _writeBackend(std::ofstream& report, const TestResult& result, const TestResult::BackendResult& backend, const std::filesystem::path& reportPath, bool active)
+void _writeBackend(std::ofstream& report, const TestResult& result, const TestResult::BackendResult& backend, const std::filesystem::path& reportPath)
 {
-    report << "<section class=\"panel backend\" data-backend=\"" << _html(backend.name) << "\"" << (active ? "" : " hidden") << ">";
+    report << "<section class=\"panel backend\" data-backend=\"" << _html(backend.name) << "\">";
     report << "<h2>" << _html(backend.name) << "</h2>";
     report << "<p class=\"muted\">compared " << backend.summary.compared
            << ", stored " << backend.comparisons.size()
@@ -404,7 +419,8 @@ void _writeBackend(std::ofstream& report, const TestResult& result, const TestRe
     report << "</tr></thead><tbody>";
     for (const auto& comparison : comparisons) {
         report << "<tr data-diff-ratio=\"" << _metricValue(comparison, PrimaryMetric)
-               << "\" data-different=\"" << (comparison.different ? 1 : 0) << "\">";
+               << "\" data-different=\"" << (comparison.different ? 1 : 0)
+               << "\" data-asset=\"" << _html(comparison.asset) << "\">";
         report << "<td class=\"status " << (comparison.different ? "diff" : "pass") << "\" data-label=\"status\">" << (comparison.different ? "diff" : "pass") << "</td>";
         report << "<td class=\"asset\" data-label=\"asset\">" << _html(comparison.asset) << "</td>";
         _writeImage(report, reportPath, comparison.reference, "reference");
@@ -451,7 +467,7 @@ bool HtmlSaver::save(const TestResult& result, const std::string& artifactsDir)
     report << "<h1>ThorVG Pixel Test Report</h1>";
     _writeToolbar(report, result);
     _writeSummary(report, result);
-    for (size_t i = 0; i < result.backends.size(); ++i) _writeBackend(report, result, result.backends[i], reportPath, i == 0);
+    for (const auto& backend : result.backends) _writeBackend(report, result, backend, reportPath);
 
     report << "</main>";
     _writeInspector(report);
