@@ -62,7 +62,7 @@ static constexpr auto HtmlHead = R"HTML(<!doctype html>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>ThorVG Pixel Test Report</title>
+<title>ThorVG Pixel Inspector</title>
 <style>
 )HTML";
 
@@ -85,6 +85,8 @@ h2 { margin: 24px 0 10px; font-size: 17px; }
 .toolbar label { display: grid; gap: 4px; font-size: 11px; font-weight: 700; text-transform: uppercase; }
 .toolbar input[type=range] { width: 220px; height: 32px; padding: 0; accent-color: #0969da; }
 #diff-threshold-value { display: inline-block; min-width: 52px; font-variant-numeric: tabular-nums; }
+#visible-count { display: inline-block; min-width: 4ch; text-align: right; font-variant-numeric: tabular-nums; }
+#theme-toggle { min-width: 70px; }
 .toolbar input[type=search] { height: 32px; min-width: 200px; padding: 0 10px; border: 1px solid #d0d7de; border-radius: 6px; background: #fff; }
 .toolbar input[type=search].invalid { border-color: #cf222e; }
 .tabs { display: inline-flex; gap: 4px; margin-right: auto; }
@@ -102,13 +104,16 @@ body.dark .toolbar input[type=search] { background: #0d1117; border-color: #3036
 body.dark .pixel-inspector { background: #161b22; border-color: #30363d; }
 body.dark .pixel-inspector canvas { background: #161b22; border-color: #30363d; }
 summary { display: inline-flex; margin-bottom: 8px; padding: 6px 10px; border: 1px solid #d0d7de; border-radius: 4px; background: #f0f3f6; font-weight: 700; cursor: pointer; }
-table { width: 100%; border-collapse: collapse; background: #fff; }
+table { width: 100%; table-layout: fixed; border-collapse: collapse; background: #fff; }
 th, td { padding: 7px; border: 1px solid #d0d7de; vertical-align: top; }
 th { background: #f0f3f6; font-size: 11px; text-align: left; text-transform: uppercase; }
+.comparison th:nth-child(1) { width: 6%; }
+.comparison th:nth-child(2) { width: 20%; }
+.comparison th:nth-child(3), .comparison th:nth-child(4), .comparison th:nth-child(5) { width: 18%; }
 .pass { color: #1a7f37; }
 .diff, .failed { color: #cf222e; }
 .images { min-width: 190px; text-align: center; background: #fbfbfc; }
-.images img { display: block; max-width: 260px; max-height: 210px; margin: 0 auto; border: 1px solid #d8dee4; }
+.images img { display: block; max-width: 100%; max-height: 210px; margin: 0 auto; border: 1px solid #d8dee4; }
 .pixel-inspector { position: fixed; display: none; z-index: 10; padding: 10px; border: 1px solid #8c959f; background: #fff; box-shadow: 0 12px 32px rgba(31,35,40,.18); pointer-events: none; }
 .pixel-inspector.on { display: block; }
 .coord { margin: 0 0 8px; font-size: 12px; }
@@ -121,7 +126,6 @@ tr[hidden] { display: none; }
 @media (max-width: 900px) {
     main { padding: 14px; }
     .summary { grid-template-columns: 1fr 1fr; }
-    .images img { max-width: 180px; }
     .comparison { display: block; overflow-x: auto; }
     .views { grid-template-columns: 1fr; }
 }
@@ -218,7 +222,10 @@ static constexpr auto Script = R"JS(
     themeToggle.textContent = dark ? 'Light' : 'Dark';
   });
   tabs.forEach((tab) => tab.addEventListener('click', () => selectTab(tab.dataset.tab)));
-  if (tabs.length) selectTab(tabs[0].dataset.tab);
+  // Allow preselecting a tab via URL hash (e.g. reporter.html#sw) for per-backend printing.
+  const hashTab = decodeURIComponent(location.hash.slice(1));
+  const initial = tabs.some((tab) => tab.dataset.tab === hashTab) ? hashTab : (tabs[0] && tabs[0].dataset.tab);
+  if (tabs.length) selectTab(initial);
   else applyThreshold();
 
   const inspector = document.getElementById('pixel-inspector');
@@ -464,7 +471,7 @@ bool HtmlSaver::save(const TestResult& result, const std::string& artifactsDir)
     report << std::setprecision(6);
     report << HtmlHead << Style;
     report << "</style></head><body><main>";
-    report << "<h1>ThorVG Pixel Test Report</h1>";
+    report << "<h1>ThorVG Pixel Inspector</h1>";
     _writeToolbar(report, result);
     _writeSummary(report, result);
     for (const auto& backend : result.backends) _writeBackend(report, result, backend, reportPath);

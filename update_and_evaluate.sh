@@ -23,9 +23,8 @@ bash ./build_and_run.sh "${TEST_OPTIONS[@]}"
 TEST_STATUS="$?"
 set -e
 
-# Report
+# Report: print each backend tab (gl/wg/sw) to a separate PDF.
 REPORT_HTML="$(pwd)/artifacts/reporter.html"
-REPORT_PDF="$(pwd)/artifacts/reporter.pdf"
 if [ -f "$REPORT_HTML" ]; then
     CHROME=""
     if command -v google-chrome >/dev/null 2>&1; then
@@ -39,7 +38,17 @@ if [ -f "$REPORT_HTML" ]; then
     fi
 
     if [ -n "$CHROME" ]; then
-        "$CHROME" --headless --disable-gpu --no-sandbox --print-to-pdf="$REPORT_PDF" "file://$REPORT_HTML"
+        # Backend tab names present in the report (every data-tab value except "all").
+        BACKENDS="$(grep -oE 'data-tab="[a-z]+"' "$REPORT_HTML" | sed -E 's/.*"(.*)".*/\1/' | grep -vx 'all' || true)"
+        if [ -z "$BACKENDS" ]; then
+            echo "No backend tabs found in $REPORT_HTML; skipping PDF export."
+        fi
+        for BACKEND in $BACKENDS; do
+            REPORT_PDF="$(pwd)/artifacts/reporter.$BACKEND.pdf"
+            # The #<backend> hash makes the report preselect that backend before printing.
+            "$CHROME" --headless --disable-gpu --no-sandbox --print-to-pdf="$REPORT_PDF" "file://$REPORT_HTML#$BACKEND" \
+                && echo "Wrote $REPORT_PDF" || echo "Failed to print $REPORT_PDF"
+        done
     else
         echo "Chrome or Chromium is required to print $REPORT_HTML to PDF."
     fi
