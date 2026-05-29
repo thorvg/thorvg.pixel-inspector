@@ -49,7 +49,10 @@
 #include "common.h"
 #include "engine.h"
 
-#define THREAD_COUNT 3
+// Since the Lottie expression feature 
+// does not support multithreading in v1.0.0,
+// temporarily setting the thread count to 0.
+#define THREAD_COUNT 0
 
 using namespace tvg;
 

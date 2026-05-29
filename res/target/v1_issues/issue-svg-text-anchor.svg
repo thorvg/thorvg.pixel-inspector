@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="360" height="180" viewBox="0 0 360 180">
+  <!-- svg_loader: add text-anchor attribute support (d238436e, 79af04d1).
+       v1.0.0 ignored text-anchor -> everything left-aligned at x=180.
+       main aligns middle / end about x=180. -->
+  <rect width="360" height="180" fill="#ffffff"/>
+  <line x1="180" y1="0" x2="180" y2="180" stroke="#dddddd" stroke-width="2"/>
+  <text x="180" y="60" font-family="PublicSans" font-size="34" text-anchor="middle" fill="#222222">middle</text>
+  <text x="180" y="120" font-family="PublicSans" font-size="34" text-anchor="end" fill="#c0392b">end</text>
+  <text x="180" y="168" font-family="PublicSans" font-size="22" text-anchor="middle" fill="#888888">anchored at the line</text>
+</svg>

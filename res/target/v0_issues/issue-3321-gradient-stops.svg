@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100">
+  <!-- issue #3321: <stop> elements were incorrectly assigned (offsets/colors
+       mixed up) when an unsupported meshgradient sibling was present. A plain
+       multi-stop gradient must keep each stop at its declared offset. -->
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="0" y2="100">
+      <stop offset="0" stop-color="#e53935"/>
+      <stop offset="0.25" stop-color="#fb8c00"/>
+      <stop offset="0.5" stop-color="#fdd835"/>
+      <stop offset="0.75" stop-color="#43a047"/>
+      <stop offset="1" stop-color="#1e88e5"/>
+    </linearGradient>
+  </defs>
+  <rect x="0" y="0" width="100" height="100" fill="url(#g)"/>
+</svg>

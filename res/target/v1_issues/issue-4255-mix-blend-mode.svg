@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="320" height="220" viewBox="0 0 320 220">
+  <!-- issue #4255 / PR: svg_loader support mix-blend-mode in style.
+       v1.0.0 ignores mix-blend-mode -> normal compositing (top circle opaque).
+       main applies the blend -> overlap region differs. -->
+  <rect x="0" y="0" width="320" height="220" fill="#ffffff"/>
+  <g>
+    <circle cx="130" cy="110" r="85" fill="#12b6ff"/>
+    <circle cx="200" cy="110" r="85" fill="#ff2e63" style="mix-blend-mode:multiply"/>
+  </g>
+  <rect x="20" y="20" width="120" height="60" fill="#ffd200"/>
+  <rect x="60" y="40" width="120" height="60" fill="#7a00ff" style="mix-blend-mode:screen"/>
+</svg>

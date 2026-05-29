@@ -1,0 +1,4 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="360" height="140" viewBox="0 0 360 140">
+  <rect width="360" height="140" fill="#ffffff"/>
+  <text x="24" y="80" font-family="PublicSans" font-size="44" fill="#1565c0">A<tspan dx="26" dy="-26">B</tspan><tspan dx="26" dy="44">C</tspan><tspan dx="26" dy="-26">D</tspan></text>
+</svg>
