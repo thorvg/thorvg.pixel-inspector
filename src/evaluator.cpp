@@ -21,11 +21,9 @@
  */
 
 #include <algorithm>
-#include <cmath>
 #include <cstdint>
 #include <cstdlib>
 #include <filesystem>
-#include <optional>
 #include <sstream>
 #include <utility>
 #include <vector>
@@ -70,14 +68,6 @@ bool _loadRGBA(const char* filename, PngImage* image)
     return true;
 }
 
-uint32_t _rgba(const uint8_t* pixel)
-{
-    return (static_cast<uint32_t>(pixel[0]) << 24) |
-           (static_cast<uint32_t>(pixel[1]) << 16) |
-           (static_cast<uint32_t>(pixel[2]) << 8) |
-           static_cast<uint32_t>(pixel[3]);
-}
-
 uint32_t _rgbaChebyshevDistance(const uint8_t* a, const uint8_t* b)
 {
     const auto r = std::abs(static_cast<int>(a[0]) - static_cast<int>(b[0]));
@@ -85,38 +75,6 @@ uint32_t _rgbaChebyshevDistance(const uint8_t* a, const uint8_t* b)
     const auto bdiff = std::abs(static_cast<int>(a[2]) - static_cast<int>(b[2]));
     const auto alpha = std::abs(static_cast<int>(a[3]) - static_cast<int>(b[3]));
     return static_cast<uint32_t>(std::max({r, g, bdiff, alpha}));
-}
-
-std::optional<uint32_t> _mostVisibleColor(const PngImage& image, float ratio)
-{
-    std::vector<uint32_t> colors;
-    colors.reserve(static_cast<size_t>(image.w) * image.h);
-
-    // Collect non-transparent pixels
-    for (size_t i = 0, n = static_cast<size_t>(image.w) * image.h; i < n; ++i) {
-        const auto pixel = image.pixels.data() + i * 4;
-        if (pixel[3] == 0) continue;
-        colors.push_back(_rgba(pixel));
-    }
-    if (colors.empty()) return std::nullopt;
-
-    // Find the most common visible color and accept it as background only if it covers the required ratio.
-    std::sort(colors.begin(), colors.end());
-
-    uint32_t mostColor = colors[0];
-    size_t mostCount = 0;
-    for (auto it = colors.begin(); it != colors.end();) {
-        const auto upper = std::upper_bound(it, colors.end(), *it);
-        const auto count = static_cast<size_t>(upper - it);
-        if (count > mostCount) {
-            mostColor = *it;
-            mostCount = count;
-        }
-        it = upper;
-    }
-
-    const auto required = static_cast<size_t>(std::max(1.0f, std::ceil(colors.size() * ratio)));
-    return mostCount >= required ? std::optional<uint32_t>(mostColor) : std::nullopt;
 }
 
 }
@@ -228,8 +186,8 @@ const std::vector<TestResult::Metric>& Evaluator::metrics() const
 {
     // The first metric is the primary report metric used for thresholding and sorting.
     static const std::vector<TestResult::Metric> metrics = {
-        {"effectiveDiffRatio", "Effective Diff Ratio"},
-        {"clusteredOutlierRatio", "Clustered Outlier Ratio"}
+        {"diffRatio", "Diff Ratio"},
+        {"diffPixelCount", "Diff Pixel Count"}
     };
     return metrics;
 }
@@ -244,53 +202,29 @@ Evaluator::ImageDiff Evaluator::evaluate(const char* reference, const char* test
     if (!_loadRGBA(reference, &ref) || !_loadRGBA(testFile, &test)) return {};
     if (ref.w != test.w || ref.h != test.h || ref.w == 0 || ref.h == 0) return {};
 
-    const auto refBackground = _mostVisibleColor(ref, DEFAULT_PIXEL_BACKGROUND_RATIO);
-    const auto testBackground = _mostVisibleColor(test, DEFAULT_PIXEL_BACKGROUND_RATIO);
-    std::optional<uint32_t> background;
-    if (refBackground && testBackground && *refBackground == *testBackground) background = *refBackground;
-
     width = ref.w;
     height = ref.h;
     diff.assign(static_cast<size_t>(width) * height * 4, 0);
 
-    uint64_t effectivePixels = 0;
+    uint64_t comparedPixels = 0;
+    uint64_t diffPixels = 0;
     double weightedDiffSum = 0.0;
     const auto pixelCount = static_cast<size_t>(width) * height;
-    double outlierPixels = 0.0;
-    const int dx[] = {-1, 0, 1, -1, 1, -1, 0, 1};
-    const int dy[] = {-1, -1, -1, 0, 0, 1, 1, 1};
     for (size_t i = 0; i < pixelCount; ++i) {
         const auto offset = i * 4;
         const auto refPixel = ref.pixels.data() + offset;
         const auto testPixel = test.pixels.data() + offset;
         uint32_t distance = 0;
 
-        // Ignore invisible transparent pixels so their RGBA payload does not affect comparison.
+        // Ignore fully transparent pixels so their RGBA payload does not affect comparison.
         const auto transparent = refPixel[3] == 0 && testPixel[3] == 0;
-        const auto backgroundPixel = background && _rgba(refPixel) == *background && _rgba(testPixel) == *background;
-        if (!transparent && !backgroundPixel) {
-            // Measure effective pixels with RGBA Chebyshev distance: the largest absolute channel delta.
+        if (!transparent) {
+            // Compare visible pixels with RGBA Chebyshev distance: the largest absolute channel delta.
             distance = _rgbaChebyshevDistance(refPixel, testPixel);
-            ++effectivePixels;
-            if (distance > result.config.threshold.maxChannelDistance) weightedDiffSum += static_cast<double>(distance) / 255.0;
-            if (distance > result.config.threshold.outlierDistance) {
-                auto x = i % width;
-                auto y = i / width;
-                int outlierCnt = 0;
-                for (size_t j = 0; j < 8; ++j) {
-                    auto nx = static_cast<int>(x) + dx[j];
-                    auto ny = static_cast<int>(y) + dy[j];
-                    if (nx < 0 || nx >= static_cast<int>(width) || ny < 0 || ny >= static_cast<int>(height)) continue;
-                    auto neighborOffset = (static_cast<size_t>(ny) * width + nx) * 4;
-                    auto neighborRefPixel = ref.pixels.data() + neighborOffset;
-                    auto neighborTestPixel = test.pixels.data() + neighborOffset;
-                    auto neighborDistance = _rgbaChebyshevDistance(neighborRefPixel, neighborTestPixel);
-                    if (neighborDistance > result.config.threshold.outlierDistance) {
-                        outlierCnt++;
-                    }
-                }
-                if (outlierCnt >= 2)
-                    outlierPixels += static_cast<double>(distance) / 255.0;
+            ++comparedPixels;
+            if (distance > result.config.threshold.maxChannelDistance) {
+                weightedDiffSum += static_cast<double>(distance) / 255.0;
+                ++diffPixels;
             }
         }
 
@@ -299,15 +233,13 @@ Evaluator::ImageDiff Evaluator::evaluate(const char* reference, const char* test
         diffPixel[0] = static_cast<uint8_t>(distance);
         diffPixel[3] = 255;
     }
-    const auto effectiveDiffRatio = effectivePixels == 0 ? 0.0f : static_cast<float>(weightedDiffSum / effectivePixels);
-    const auto outlierRatio =  (weightedDiffSum == 0 ? 0.0f : static_cast<float>(outlierPixels / weightedDiffSum));
-    const int minDiffPixels = static_cast<int>(std::sqrt(effectivePixels) * DEFAULT_OUTLIER_GATE_SCALE);
+    const auto diffRatio = comparedPixels == 0 ? 0.0f : static_cast<float>(weightedDiffSum / comparedPixels);
 
+    // Any diff beyond the ratio threshold fails; with the default 0 threshold a single differing pixel fails.
     return {
         true,
-        effectiveDiffRatio >= result.config.threshold.effectiveDiffRatio 
-          || (outlierRatio > result.config.threshold.outlierRatio && minDiffPixels < weightedDiffSum),
-        {effectiveDiffRatio, outlierRatio}
+        diffRatio > result.config.threshold.diffRatio,
+        {diffRatio, static_cast<float>(diffPixels)}
     };
 }
 

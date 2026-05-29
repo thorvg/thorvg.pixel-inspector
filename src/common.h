@@ -43,23 +43,15 @@ constexpr auto ResetColors = "\033[0m";
 #define DEFAULT_ARTIFACTS_DIR ARTIFACTS_DIR
 #define DEFAULT_BACKENDS_TEXT "gl,wg,sw"
 #define DEFAULT_MAX_WIDTH 200
-#define DEFAULT_THRESHOLD_MAX_CHANNEL_DISTANCE 12
-#define DEFAULT_THRESHOLD_EFFECTIVE_DIFF_RATIO 0.03f
-#define DEFAULT_PIXEL_BACKGROUND_RATIO 0.20f
-
-#define DEFAULT_PIXEL_OUTLIER_DISTANCE_THRESHOLD 125
-#define DEFAULT_PIXEL_OUTLIER_RATIO_THRESHOLD 0.80f
-#define DEFAULT_OUTLIER_GATE_SCALE 0.5f
-
+#define DEFAULT_THRESHOLD_MAX_CHANNEL_DISTANCE 0
+#define DEFAULT_THRESHOLD_DIFF_RATIO 0.0f
 
 struct TestConfig
 {
     struct Threshold
     {
-        uint32_t maxChannelDistance = DEFAULT_THRESHOLD_MAX_CHANNEL_DISTANCE;       // per-pixel: defines "different"
-        uint32_t outlierDistance = DEFAULT_PIXEL_OUTLIER_DISTANCE_THRESHOLD;        // per-pixel: defines "outlier"
-        float effectiveDiffRatio = DEFAULT_THRESHOLD_EFFECTIVE_DIFF_RATIO;          // per-image: pass/fail
-        float outlierRatio = DEFAULT_PIXEL_OUTLIER_RATIO_THRESHOLD;                 // per-image: pass/fail
+        uint32_t maxChannelDistance = DEFAULT_THRESHOLD_MAX_CHANNEL_DISTANCE;  // per-pixel: counts a pixel as different (0 = strict)
+        float diffRatio = DEFAULT_THRESHOLD_DIFF_RATIO;                        // per-image: pass/fail (0 = any diff fails)
     };
 
     std::string resourceTargetDir = DEFAULT_RESOURCE_TARGET_DIR;
