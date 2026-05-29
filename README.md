@@ -1,5 +1,7 @@
+[![CodeFactor](https://www.codefactor.io/repository/github/thorvg/thorvg.example/badge)](https://www.codefactor.io/repository/github/thorvg/thorvg.example)
 [![License](https://img.shields.io/badge/licence-MIT-green.svg?style=flat)](LICENSE)
-[![ThorVG](https://img.shields.io/badge/ThorVG-Pixel%20Inspector-orange.svg?style=flat)](https://github.com/thorvg/thorvg)
+[![Discord](https://img.shields.io/badge/Community-5865f2?style=flat&logo=discord&logoColor=white)](https://discord.gg/n25xj6J6HM)
+[![OpenCollective](https://img.shields.io/badge/OpenCollective-84B5FC?style=flat&logo=opencollective&logoColor=white)](https://opencollective.com/thorvg)
 
 # ThorVG Pixel Inspector
 
