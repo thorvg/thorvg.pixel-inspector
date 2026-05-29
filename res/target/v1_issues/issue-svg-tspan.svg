@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="360" height="170" viewBox="0 0 360 170">
+  <!-- svg_loader: add tspan element support (ac8be456).
+       v1.0.0 had no <tspan> support -> tspan content unrendered / collapsed.
+       main positions each tspan by its own x/y. -->
+  <rect width="360" height="170" fill="#ffffff"/>
+  <text font-family="PublicSans" font-size="44" fill="#222222">
+    <tspan x="22" y="56">Thor</tspan>
+    <tspan x="150" y="120" fill="#e8521f">VG</tspan>
+  </text>
+</svg>

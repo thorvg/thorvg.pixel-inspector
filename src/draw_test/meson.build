@@ -1,7 +1,9 @@
 source_file = [
    'drawTest.h',
    'drawTest.cpp',
-   'accessor.cpp',
+   # 'accessor.cpp',  # disabled for the v1.0.0<->main demo: uses main-only APIs
+                      # (Picture::accessible, Accessor::name). Re-enable when the
+                      # baseline ref also supports them.
    'blending.cpp',
    'boundingBox.cpp',
    'clipping.cpp',
@@ -15,6 +17,8 @@ source_file = [
    'gradientMasking.cpp',
    'gradientTransform.cpp',
    'issue.cpp',
+   'v1_issues.cpp',
+   'v0_issues.cpp',
    'masking.cpp',
    'maskingMethods.cpp',
    'opacity.cpp',
