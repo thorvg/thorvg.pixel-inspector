@@ -68,15 +68,6 @@ bool _loadRGBA(const char* filename, PngImage* image)
     return true;
 }
 
-uint32_t _rgbaChebyshevDistance(const uint8_t* a, const uint8_t* b)
-{
-    const auto r = std::abs(static_cast<int>(a[0]) - static_cast<int>(b[0]));
-    const auto g = std::abs(static_cast<int>(a[1]) - static_cast<int>(b[1]));
-    const auto bdiff = std::abs(static_cast<int>(a[2]) - static_cast<int>(b[2]));
-    const auto alpha = std::abs(static_cast<int>(a[3]) - static_cast<int>(b[3]));
-    return static_cast<uint32_t>(std::max({r, g, bdiff, alpha}));
-}
-
 }
 
 Evaluator::~Evaluator()
@@ -220,7 +211,12 @@ Evaluator::ImageDiff Evaluator::evaluate(const char* reference, const char* test
         const auto transparent = refPixel[3] == 0 && testPixel[3] == 0;
         if (!transparent) {
             // Compare visible pixels with RGBA Chebyshev distance: the largest absolute channel delta.
-            distance = _rgbaChebyshevDistance(refPixel, testPixel);
+            distance = static_cast<uint32_t>(std::max({
+                std::abs(refPixel[0] - testPixel[0]),
+                std::abs(refPixel[1] - testPixel[1]),
+                std::abs(refPixel[2] - testPixel[2]),
+                std::abs(refPixel[3] - testPixel[3])
+            }));
             ++comparedPixels;
             if (distance > result.config.threshold.maxChannelDistance) {
                 weightedDiffSum += static_cast<double>(distance) / 255.0;

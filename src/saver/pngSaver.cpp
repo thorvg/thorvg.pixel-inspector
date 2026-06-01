@@ -91,11 +91,6 @@ bool _resize(TestCanvas* canvas, Picture* picture, Size maxSize)
     return canvas->resize(size.w, size.h);
 }
 
-bool _renderFrame(TestCanvas* canvas, Picture* picture)
-{
-    return canvas->clear() && canvas->ptr()->add(picture) == Result::Success && canvas->render();
-}
-
 }
 
 bool PngSaver::save(TestCanvas* canvas, const char* asset, const char* filename)
@@ -131,11 +126,27 @@ bool PngSaver::save(TestCanvas* canvas, Picture* picture, const char* filename)
         return false;
     }
 
-    picture->ref();
-    const auto ret = _renderFrame(canvas, picture) && _encode(filename, canvas->buffer(), canvas->width, canvas->height, LCT_RGBA);
-    const auto cleared = canvas->clear();
-    picture->unref();
-    return ret && cleared;
+    if (!canvas->clear()) {
+        Picture::rel(picture);
+        return false;
+    }
+
+    if (canvas->ptr()->add(picture) != Result::Success) {
+        Picture::rel(picture);
+        return false;
+    }
+
+    if (!canvas->render()) {
+        canvas->clear();
+        return false;
+    }
+
+    if (!_encode(filename, canvas->buffer(), canvas->width, canvas->height, LCT_RGBA)) {
+        canvas->clear();
+        return false;
+    }
+
+    return canvas->clear();
 }
 
 bool PngSaver::save(TestCanvas* canvas, const char* filename)
@@ -155,12 +166,19 @@ bool PngSaver::save(TestCanvas* canvas, Animation* animation, const char* filena
 
     // Draw each frame to a grid image. 
     std::vector<uint8_t> buffer(static_cast<size_t>(output) * output * 4,  0);
+    if (!canvas->clear()) return false;
+    if (canvas->ptr()->add(picture) != Result::Success) return false;
+
     const auto count = grid * grid;
     for (uint32_t i = 0; i < count; ++i) {
         const auto progress = (i + 1 == count) ? 1.0f : static_cast<float>(i) / count;
         animation->frame((totalFrame - 1.0f) * progress);
-        _renderFrame(canvas, picture);
+        const auto rendered = canvas->render();
         const auto src = canvas->buffer();
+        if (!rendered || !src) {
+            canvas->ptr()->remove(picture);
+            return false;
+        }
 
         // Copy
         const auto col = i % grid, row = i / grid;
@@ -170,8 +188,8 @@ bool PngSaver::save(TestCanvas* canvas, Animation* animation, const char* filena
         for (uint32_t y = 0; y < size.h; ++y) {
             std::memcpy(buffer.data() + (sy + y) * dstStride + sx, src + y * srcStride, srcStride);
         }
-        canvas->clear();
     }
 
+    if (canvas->ptr()->remove(picture) != Result::Success) return false;
     return _encode(filename, buffer.data(), output, output, LCT_RGBA);
 }

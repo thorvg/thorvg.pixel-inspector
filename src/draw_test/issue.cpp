@@ -37,11 +37,11 @@ static bool _addDst(tvg::Canvas* canvas, const char* path, float x, float y, flo
 
 DRAW_TEST(dst_svg_scale, 360, 240, canvas)
 {
-    const auto path = (std::filesystem::path(EXAMPLE_DIR) / "svg" / "dst.svg").string();
+    const auto path = EXAMPLE_DIR"/svg/dst.svg";
 
-    if (!_addDst(canvas, path.c_str(), 20.0f, 20.0f, 100.0f, 100.0f)) return false;
-    if (!_addDst(canvas, path.c_str(), 140.0f, 20.0f, 200.0f, 200.0f)) return false;
-    if (!_addDst(canvas, path.c_str(), 20.0f, 140.0f, 50.0f, 50.0f)) return false;
+    if (!_addDst(canvas, path, 20.0f, 20.0f, 100.0f, 100.0f)) return false;
+    if (!_addDst(canvas, path, 140.0f, 20.0f, 200.0f, 200.0f)) return false;
+    if (!_addDst(canvas, path, 20.0f, 140.0f, 50.0f, 50.0f)) return false;
 
     return true;
 }
