@@ -71,7 +71,8 @@ struct TestEngine
 
     virtual ~TestEngine() {}
 
-    virtual Canvas* init() = 0;
+    virtual bool init() = 0;
+    virtual Canvas* genCanvas() = 0;
     virtual Result resize(Canvas* canvas, uint32_t w, uint32_t h) = 0;
     virtual const uint8_t* output(uint32_t w, uint32_t h) = 0;
 };
@@ -91,9 +92,14 @@ struct TestSwEngine : TestEngine
         Initializer::term();
     }
 
-    Canvas* init() override
+    bool init() override
     {
         Initializer::init(THREAD_COUNT);
+        return true;
+    }
+
+    Canvas* genCanvas() override
+    {
         return SwCanvas::gen(EngineOption::Default);
     }
 
@@ -168,10 +174,16 @@ struct TestGLEngine : TestEngine
         if (videoInitialized) SDL_Quit();
     }
 
-    Canvas* init() override
+    bool init() override
     {
-        if (!window || !context || !makeCurrent()) return nullptr;
+        if (!window || !context || !makeCurrent()) return false;
         Initializer::init(THREAD_COUNT);
+        return true;
+    }
+
+    Canvas* genCanvas() override
+    {
+        if (!makeCurrent()) return nullptr;
         return GlCanvas::gen(EngineOption::Default);
     }
 
@@ -280,11 +292,17 @@ struct TestGLEngine : TestEngine
         eglReleaseThread();
     }
 
-    Canvas* init() override
+    bool init() override
     {
-        if (display == EGL_NO_DISPLAY || surface == EGL_NO_SURFACE || context == EGL_NO_CONTEXT) return nullptr;
-        if (eglMakeCurrent(display, surface, surface, context) != EGL_TRUE) return nullptr;
+        if (display == EGL_NO_DISPLAY || surface == EGL_NO_SURFACE || context == EGL_NO_CONTEXT) return false;
+        if (eglMakeCurrent(display, surface, surface, context) != EGL_TRUE) return false;
         Initializer::init(THREAD_COUNT);
+        return true;
+    }
+
+    Canvas* genCanvas() override
+    {
+        if (eglMakeCurrent(display, surface, surface, context) != EGL_TRUE) return nullptr;
         return GlCanvas::gen(EngineOption::Default);
     }
 
@@ -529,10 +547,16 @@ struct TestWgEngine : TestEngine
         if (instance) wgpuInstanceRelease(instance);
     }
 
-    Canvas* init() override
+    bool init() override
+    {
+        if (!instance || !device) return false;
+        Initializer::init(THREAD_COUNT);
+        return true;
+    }
+
+    Canvas* genCanvas() override
     {
         if (!instance || !device) return nullptr;
-        Initializer::init(THREAD_COUNT);
         return WgCanvas::gen(EngineOption::Default);
     }
 
@@ -618,7 +642,12 @@ TestCanvas::TestCanvas(const char* engineType, uint32_t w, uint32_t h, ColorSpac
         return;
     }
 
-    canvas = engine->init();
+    if (!engine->init()) {
+        LOGERR("ENGINE", "Engine initialization failed.");
+        return;
+    }
+
+    canvas = engine->genCanvas();
     if (!canvas) {
         LOGERR("ENGINE", "Canvas initialization failed.");
         return;
@@ -652,6 +681,22 @@ bool TestCanvas::resize(uint32_t w, uint32_t h)
     width = w;
     height = h;
     return true;
+}
+
+bool TestCanvas::recreate()
+{
+    if (!engine) return false;
+
+    const auto currentWidth = width;
+    const auto currentHeight = height;
+
+    delete canvas;
+    canvas = engine->genCanvas();
+    width = 0;
+    height = 0;
+
+    if (!canvas) return false;
+    return resize(currentWidth, currentHeight);
 }
 
 bool TestCanvas::clear()

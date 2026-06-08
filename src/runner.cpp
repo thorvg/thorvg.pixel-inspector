@@ -120,7 +120,13 @@ bool Runner::run()
         PngSaver saver(config.maxWidth);
         for (const auto& asset : assets) {
             auto target = _path(config.resourceTargetDir, config.artifactsDir, backend, asset, evaluatorQueue ? "test" : "reference");
-            const auto rendered = saver.save(canvas, asset.c_str(), target.string().c_str());
+            LOG("RUNNER", "Started: %s", asset.c_str());
+            auto rendered = false;
+            if (canvas && canvas->recreate()) {
+                rendered = saver.save(canvas, asset.c_str(), target.string().c_str());
+            } else {
+                LOGERR("RUNNER", "Failed to recreate asset canvas: %s", backend.c_str());
+            }
             if (!rendered) LOGERR("RUNNER", "Failed: %s", asset.c_str());
 
             if (!evaluatorQueue) continue;
@@ -147,7 +153,14 @@ bool Runner::run()
         for (const auto& entry : drawTests) {
             auto drawTest = entry.factory();
             const auto target = _drawTestPath(config.artifactsDir, backend, entry.name, evaluatorQueue ? "test" : "reference");
-            const auto rendered = drawTest && _saveDrawTest(canvas, drawTest.get(), target.string().c_str());
+            auto rendered = false;
+            if (drawTest) {
+                if (canvas && canvas->recreate()) {
+                    rendered = _saveDrawTest(canvas, drawTest.get(), target.string().c_str());
+                } else {
+                    LOGERR("RUNNER", "Failed to recreate draw test canvas: %s", backend.c_str());
+                }
+            }
             if (!rendered) LOGERR("RUNNER", "Failed draw test: %s", entry.name);
 
             if (!evaluatorQueue) continue;

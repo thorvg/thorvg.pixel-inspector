@@ -39,6 +39,7 @@ struct TestCanvas
     ~TestCanvas();
 
     bool resize(uint32_t w, uint32_t h);
+    bool recreate();
     bool clear();
     bool render();
     const uint8_t* buffer();
