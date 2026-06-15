@@ -3,19 +3,19 @@
 set -euo pipefail
 
 if [ "$#" -lt 2 ]; then
-    echo "Usage: $0 <reference-ref> <test-ref> [test-options...]"
+    echo "Usage: $0 <golden-ref> <test-ref> [test-options...]"
     echo "Example: $0 v1.0.5 main --backend sw"
     exit 1
 fi
 
-REFERENCE_REF="$1"
+GOLDEN_REF="$1"
 TEST_REF="$2"
 shift 2
 
 TEST_OPTIONS=("$@")
 
-bash ./install_thorvg.sh "$REFERENCE_REF"
-bash ./build_and_run.sh "${TEST_OPTIONS[@]}" --update-reference
+bash ./install_thorvg.sh "$GOLDEN_REF"
+bash ./build_and_run.sh "${TEST_OPTIONS[@]}" --update-golden
 
 bash ./install_thorvg.sh "$TEST_REF"
 set +e
@@ -24,7 +24,7 @@ TEST_STATUS="$?"
 set -e
 
 # Report: print each backend tab (gl/wg/sw) to a separate PDF.
-REPORT_HTML="$(pwd)/artifacts/reporter.html"
+REPORT_HTML="$(pwd)/output/reporter.html"
 if [ -f "$REPORT_HTML" ]; then
     CHROME=""
     if command -v google-chrome >/dev/null 2>&1; then
@@ -44,7 +44,7 @@ if [ -f "$REPORT_HTML" ]; then
             echo "No backend tabs found in $REPORT_HTML; skipping PDF export."
         fi
         for BACKEND in $BACKENDS; do
-            REPORT_PDF="$(pwd)/artifacts/reporter.$BACKEND.pdf"
+            REPORT_PDF="$(pwd)/output/reporter.$BACKEND.pdf"
             # The #<backend> hash makes the report preselect that backend before printing.
             "$CHROME" --headless --disable-gpu --no-sandbox --print-to-pdf="$REPORT_PDF" "file://$REPORT_HTML#$BACKEND" \
                 && echo "Wrote $REPORT_PDF" || echo "Failed to print $REPORT_PDF"

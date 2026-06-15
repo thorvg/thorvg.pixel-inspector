@@ -129,11 +129,11 @@ static void _help(const char* name)
     std::printf("Options:\n");
     std::printf("  --backend <sw|gl|wg>[,...]     render backend list (default: %s)\n", DEFAULT_BACKENDS_TEXT);
     std::printf("  --resource <dir>               resource directory (default: TARGET_RESOURCE_DIR)\n");
-    std::printf("  --artifacts <dir>              artifacts directory (default: ARTIFACTS_DIR)\n");
+    std::printf("  --output <dir>                 output directory (default: OUTPUT_DIR)\n");
     std::printf("  --max-width <px>               PNG fit cell width (default: %u)\n", DEFAULT_MAX_WIDTH);
     std::printf("  --max-channel-distance-threshold <value>  Max-channel distance threshold (default: %u)\n", DEFAULT_THRESHOLD_MAX_CHANNEL_DISTANCE);
     std::printf("  --diff-ratio-threshold <value>  Diff ratio threshold (default: %.3g)\n", DEFAULT_THRESHOLD_DIFF_RATIO);
-    std::printf("  --update-reference             update references\n");
+    std::printf("  --update-golden               update golden images\n");
     std::printf("  --help                         print this message\n");
 }
 
@@ -147,9 +147,9 @@ static bool _parse(int argc, char** argv, TestConfig* config, bool* done)
         } else if (_next(argc, argv, &i, "--resource", &value)) {
             if (*value == '\0') return false;
             config->resourceTargetDir = value;
-        } else if (_next(argc, argv, &i, "--artifacts", &value)) {
+        } else if (_next(argc, argv, &i, "--output", &value)) {
             if (*value == '\0') return false;
-            config->artifactsDir = value;
+            config->outputDir = value;
         } else if (_next(argc, argv, &i, "--max-width", &value)) {
             if (!_uint32(value, &config->maxWidth)) return false;
             if (config->maxWidth == 0) return false;
@@ -161,8 +161,8 @@ static bool _parse(int argc, char** argv, TestConfig* config, bool* done)
                    _next(argc, argv, &i, "--diff_ratio_threshold", &value)) {
             if (!_float(value, &config->threshold.diffRatio)) return false;
             if (config->threshold.diffRatio > 1.0f) return false;
-        } else if (_equal(argv[i], "--update-reference")) {
-            config->updateReference = true;
+        } else if (_equal(argv[i], "--update-golden")) {
+            config->updateGolden = true;
         } else if (_equal(argv[i], "--help") || _equal(argv[i], "-h")) {
             _help(argv[0]);
             *done = true;

@@ -29,7 +29,7 @@ struct TestResult;
 
 struct HtmlSaver
 {
-    bool save(const TestResult& result, const std::string& artifactsDir);
+    bool save(const TestResult& result, const std::string& outputDir);
 };
 
 #endif

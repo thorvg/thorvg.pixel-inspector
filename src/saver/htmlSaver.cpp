@@ -231,12 +231,12 @@ static constexpr auto Script = R"JS(
   const inspector = document.getElementById('pixel-inspector');
   const coord = inspector.querySelector('.coord');
   const canvases = {
-    reference: inspector.querySelector('canvas[data-role="reference"]'),
+    golden: inspector.querySelector('canvas[data-role="golden"]'),
     test: inspector.querySelector('canvas[data-role="test"]'),
     diff: inspector.querySelector('canvas[data-role="diff"]')
   };
   const labels = {
-    reference: inspector.querySelector('.rgba[data-role="reference"]'),
+    golden: inspector.querySelector('.rgba[data-role="golden"]'),
     test: inspector.querySelector('.rgba[data-role="test"]'),
     diff: inspector.querySelector('.rgba[data-role="diff"]')
   };
@@ -421,7 +421,7 @@ void _writeBackend(std::ofstream& report, const TestResult& result, const TestRe
 
     report << "<details open><summary data-total=\"" << comparisons.size() << "\">Comparisons (" << comparisons.size() << " shown / " << comparisons.size() << " total)</summary>";
     report << "<div class=\"comparison\"><table><thead><tr>";
-    report << "<th>status</th><th>asset</th><th>reference</th><th>test</th><th>diff</th>";
+    report << "<th>status</th><th>asset</th><th>golden</th><th>test</th><th>diff</th>";
     _writeMetricHeader(report, result);
     report << "</tr></thead><tbody>";
     for (const auto& comparison : comparisons) {
@@ -430,7 +430,7 @@ void _writeBackend(std::ofstream& report, const TestResult& result, const TestRe
                << "\" data-asset=\"" << _html(comparison.asset) << "\">";
         report << "<td class=\"status " << (comparison.different ? "diff" : "pass") << "\" data-label=\"status\">" << (comparison.different ? "diff" : "pass") << "</td>";
         report << "<td class=\"asset\" data-label=\"asset\">" << _html(comparison.asset) << "</td>";
-        _writeImage(report, reportPath, comparison.reference, "reference");
+        _writeImage(report, reportPath, comparison.golden, "golden");
         _writeImage(report, reportPath, comparison.test, "test");
         _writeImage(report, reportPath, comparison.diff, "diff");
         _writeMetricCells(report, result, comparison);
@@ -448,7 +448,7 @@ void _writeInspector(std::ofstream& report)
 <div id="pixel-inspector" class="pixel-inspector">
   <div class="coord">x -, y -</div>
   <div class="views">
-    <div><b>reference</b><canvas data-role="reference" width="180" height="180"></canvas><div class="rgba" data-role="reference">RGBA -</div></div>
+    <div><b>golden</b><canvas data-role="golden" width="180" height="180"></canvas><div class="rgba" data-role="golden">RGBA -</div></div>
     <div><b>test</b><canvas data-role="test" width="180" height="180"></canvas><div class="rgba" data-role="test">RGBA -</div></div>
     <div><b>diff</b><canvas data-role="diff" width="180" height="180"></canvas><div class="rgba" data-role="diff">RGBA -</div></div>
   </div>
@@ -458,13 +458,13 @@ void _writeInspector(std::ofstream& report)
 
 }  // namespace
 
-bool HtmlSaver::save(const TestResult& result, const std::string& artifactsDir)
+bool HtmlSaver::save(const TestResult& result, const std::string& outputDir)
 {
     std::error_code error;
-    std::filesystem::create_directories(artifactsDir, error);
+    std::filesystem::create_directories(outputDir, error);
     if (error) return false;
 
-    const auto reportPath = std::filesystem::path(artifactsDir) / "reporter.html";
+    const auto reportPath = std::filesystem::path(outputDir) / "reporter.html";
     std::ofstream report(reportPath);
     if (!report.is_open()) return false;
 
