@@ -4,7 +4,6 @@ compiler_flags = []
 pixel_inspector_source_file = []
 
 thorvg_dep = dependency('thorvg-1', required: true)
-thorvg_inc = include_directories(join_paths(thorvg_dep.get_variable(pkgconfig: 'includedir'), 'thorvg-1'))
 pixel_inspector_dep = [thorvg_dep, ]
 
 # Lottie Test
@@ -15,7 +14,7 @@ lottie_example = '''
     }
 '''
 
-if not cc.links(lottie_example, dependencies : thorvg_dep, include_directories : thorvg_inc)
+if not cc.links(lottie_example, dependencies : thorvg_dep)
     error('ThorVG Lottie is required.')
 endif
 
