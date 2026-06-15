@@ -40,7 +40,7 @@ constexpr auto ResetColors = "\033[0m";
 #define LOGERR(tag, fmt, ...) fprintf(stderr, "%s[E]%s %s" tag "%s (%s %d): %s" fmt "\n", ErrorBgColor, ResetColors, ErrorColor, GreyColor, __FILE__, __LINE__, ResetColors, ##__VA_ARGS__)
 
 #define DEFAULT_RESOURCE_TARGET_DIR TARGET_RESOURCE_DIR
-#define DEFAULT_ARTIFACTS_DIR ARTIFACTS_DIR
+#define DEFAULT_OUTPUT_DIR OUTPUT_DIR
 #define DEFAULT_BACKENDS_TEXT "gl,wg,sw"
 #define DEFAULT_MAX_WIDTH 200
 #define DEFAULT_THRESHOLD_MAX_CHANNEL_DISTANCE 0
@@ -55,11 +55,11 @@ struct TestConfig
     };
 
     std::string resourceTargetDir = DEFAULT_RESOURCE_TARGET_DIR;
-    std::string artifactsDir = DEFAULT_ARTIFACTS_DIR;
+    std::string outputDir = DEFAULT_OUTPUT_DIR;
     std::vector<std::string> backends;
     uint32_t maxWidth = DEFAULT_MAX_WIDTH;
     Threshold threshold;
-    bool updateReference = false;
+    bool updateGolden = false;
 };
 
 struct TestResult
@@ -80,7 +80,7 @@ struct TestResult
     struct Comparison
     {
         std::string asset;
-        std::string reference;
+        std::string golden;
         std::string test;
         std::string diff;
         std::vector<float> metricValues;

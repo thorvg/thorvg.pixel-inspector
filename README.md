@@ -10,7 +10,7 @@
 </p>
 
 **Pixel Inspector** is a rendering inspection tool for ThorVG. It renders
-SVG and Lottie assets and compares generated PNGs against references with a
+SVG and Lottie assets and compares generated PNGs against golden images with a
 weighted RGBA pixel diff evaluator.
 
 ## Features
@@ -20,7 +20,7 @@ weighted RGBA pixel diff evaluator.
 </p>
 
 - Renders SVG and Lottie assets with ThorVG backends.
-- Compares rendered PNGs against references with weighted RGBA pixel diff.
+- Compares rendered PNGs against golden images with weighted RGBA pixel diff.
 - Provides HTML reports.
 
 ## Requirements
@@ -46,21 +46,21 @@ meson compile -C builddir
 ```
 
 By default, target resources are read from `res/target` and generated files are
-written under `artifacts`.
+written under `output`.
 
 ## Usage
 
 ```sh
 ./builddir/src/tvg-pixel-inspector --backend=sw
 ./builddir/src/tvg-pixel-inspector --backend="gl,wg,sw"
-./builddir/src/tvg-pixel-inspector --update-reference --backend="gl,wg,sw"
+./builddir/src/tvg-pixel-inspector --update-golden --backend="gl,wg,sw"
 ```
 
 Helper scripts are also available:
 
 ```sh
 ./install_thorvg.sh v1.0.5
-./build_and_run.sh --update-reference
+./build_and_run.sh --update-golden
 
 ./install_thorvg.sh main
 ./build_and_run.sh
@@ -74,8 +74,8 @@ all arguments to the executable.
 ```
 
 `update_and_evaluate.sh` takes two ThorVG refs. The first ref is used to install
-ThorVG and update the reference images. The second ref is then installed and
-compared against those references.
+ThorVG and update the golden images. The second ref is then installed and
+compared against those golden images.
 
 ### Options
 
@@ -83,18 +83,18 @@ compared against those references.
 | --- | --- |
 | `--backend=<list>` | Render backend list. |
 | `--resource=<dir>` | Resource directory. |
-| `--artifacts=<dir>` | Artifacts directory. |
+| `--output=<dir>` | Output directory. |
 | `--max-width=<px>` | PNG fit cell width. Images are scaled to fit this box while preserving aspect ratio. |
 | `--max-channel-distance-threshold=<value>` | Max-channel distance threshold. A pixel counts as different when its RGBA Chebyshev distance exceeds this. Default `0`. |
 | `--diff-ratio-threshold=<value>` | Diff ratio threshold. An image is marked different when its diff ratio exceeds this. Default `0`. |
-| `--update-reference` | Update references. |
+| `--update-golden` | Update golden images. |
 | `--help` | Print command line help. |
 
 ### Evaluator
 
 - Pixels are compared by RGBA Chebyshev distance, which uses the largest channel
   delta among R, G, B, and A.
-- Fully transparent pixels (alpha 0 in both the reference and the test) are
+- Fully transparent pixels (alpha 0 in both the golden and the test) are
   excluded; every other pixel is compared.
 - A pixel counts as different when its distance exceeds
   `--max-channel-distance-threshold` (default `0`, so any non-identical pixel
@@ -118,8 +118,8 @@ DRAW_TEST(name, width, height, canvas)
 ```
 
 For each backend, registered draw tests are rendered after that backend's asset
-tests. In update mode, their reference images are updated after that backend's
-asset references.
+tests. In update mode, their golden images are updated after that backend's
+asset golden images are updated.
 
 Add new draw test `.cpp` files to `src/draw_test/meson.build` so they are linked
 into the inspector and registered at startup.
@@ -131,41 +131,41 @@ SVG pictures, and clipping.
 ## Output
 
 ```text
-artifacts/
+output/
   reporter.html
   draw_test/
-    viewport.gl.reference.png
+    viewport.gl.golden.png
     viewport.gl.test.png
     viewport.gl.diff.png
-    viewport.wg.reference.png
+    viewport.wg.golden.png
     viewport.wg.test.png
     viewport.wg.diff.png
-    viewport.sw.reference.png
+    viewport.sw.golden.png
     viewport.sw.test.png
     viewport.sw.diff.png
     ...
   lottie/
-    sample.gl.reference.png
+    sample.gl.golden.png
     sample.gl.test.png
     sample.gl.diff.png
-    sample.sw.reference.png
+    sample.sw.golden.png
     ...
   svg/
-    logo.gl.reference.png
+    logo.gl.golden.png
     logo.gl.test.png
     logo.gl.diff.png
     logo.gl.sw.png
     ...
 ```
 
-The report file is written directly under the artifacts directory.
+The report file is written directly under the output directory.
 Generated image paths use each asset path relative to the resource directory:
 
 ```text
 res/target/lottie/sample.json
-  -> artifacts/lottie/sample.sw.reference.png
-  -> artifacts/lottie/sample.sw.test.png
-  -> artifacts/lottie/sample.sw.diff.png
+  -> output/lottie/sample.sw.golden.png
+  -> output/lottie/sample.sw.test.png
+  -> output/lottie/sample.sw.diff.png
 ```
 
 ## Resources

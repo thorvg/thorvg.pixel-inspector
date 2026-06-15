@@ -38,7 +38,7 @@ struct EvaluationTask
     std::string backend;
     std::string asset;
     std::string relative;
-    std::string reference;
+    std::string golden;
     std::string test;
     std::string diff;
     bool rendered = false;
@@ -68,7 +68,7 @@ private:
     void run();
 
     const std::vector<TestResult::Metric>& metrics() const;
-    ImageDiff evaluate(const char* reference, const char* test);
+    ImageDiff evaluate(const char* golden, const char* test);
     bool saveResult(const char* filename) const;
 
     std::mutex mutex;
