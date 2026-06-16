@@ -224,9 +224,14 @@ Evaluator::ImageDiff Evaluator::evaluate(const char* golden, const char* testFil
             }
         }
 
-        // Store the distance in the red channel of the diff image for visualization.
+        // Visualize exact matches as black; non-zero distance fades from white to red.
         auto diffPixel = diff.data() + offset;
-        diffPixel[0] = static_cast<uint8_t>(distance);
+        const auto level = static_cast<uint8_t>(distance);
+        if (level > 0) {
+            diffPixel[0] = 255;
+            diffPixel[1] = 255 - level;
+            diffPixel[2] = 255 - level;
+        }
         diffPixel[3] = 255;
     }
     const auto diffRatio = comparedPixels == 0 ? 0.0f : static_cast<float>(weightedDiffSum / comparedPixels);
