@@ -658,11 +658,6 @@ TestCanvas::TestCanvas(const char* engineType, uint32_t w, uint32_t h, ColorSpac
     resize(w, h);
 }
 
-TestCanvas::TestCanvas(const char* engineType, ColorSpace cs) :
-    TestCanvas(engineType, DefaultWidth, DefaultHeight, cs)
-{
-}
-
 TestCanvas::~TestCanvas()
 {
     delete(canvas);
