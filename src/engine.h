@@ -51,6 +51,7 @@ struct TestCanvas
 private:
     tvg::Canvas* canvas = nullptr;
     TestEngine* engine = nullptr;
+    bool initialized = false;
 };
 
 #endif

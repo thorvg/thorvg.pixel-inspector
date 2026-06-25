@@ -89,12 +89,10 @@ struct TestSwEngine : TestEngine
     ~TestSwEngine() override
     {
         std::free(pixels);
-        Initializer::term();
     }
 
     bool init() override
     {
-        Initializer::init(THREAD_COUNT);
         return true;
     }
 
@@ -165,7 +163,6 @@ struct TestGLEngine : TestEngine
 
     ~TestGLEngine()
     {
-        Initializer::term();
         if (context) {
             SDL_GL_MakeCurrent(nullptr, nullptr);
             SDL_GL_DeleteContext(context);
@@ -177,7 +174,6 @@ struct TestGLEngine : TestEngine
     bool init() override
     {
         if (!window || !context || !makeCurrent()) return false;
-        Initializer::init(THREAD_COUNT);
         return true;
     }
 
@@ -282,7 +278,6 @@ struct TestGLEngine : TestEngine
 
     ~TestGLEngine()
     {
-        Initializer::term();
         if (display != EGL_NO_DISPLAY) {
             eglMakeCurrent(display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
             if (surface != EGL_NO_SURFACE) eglDestroySurface(display, surface);
@@ -296,7 +291,6 @@ struct TestGLEngine : TestEngine
     {
         if (display == EGL_NO_DISPLAY || surface == EGL_NO_SURFACE || context == EGL_NO_CONTEXT) return false;
         if (eglMakeCurrent(display, surface, surface, context) != EGL_TRUE) return false;
-        Initializer::init(THREAD_COUNT);
         return true;
     }
 
@@ -535,7 +529,6 @@ struct TestWgEngine : TestEngine
 
     ~TestWgEngine()
     {
-        Initializer::term();
         if (texture) {
             wgpuTextureDestroy(texture);
             wgpuTextureRelease(texture);
@@ -550,7 +543,6 @@ struct TestWgEngine : TestEngine
     bool init() override
     {
         if (!instance || !device) return false;
-        Initializer::init(THREAD_COUNT);
         return true;
     }
 
@@ -647,6 +639,12 @@ TestCanvas::TestCanvas(const char* engineType, uint32_t w, uint32_t h, ColorSpac
         return;
     }
 
+    if (Initializer::init(THREAD_COUNT) != Result::Success) {
+        LOGERR("ENGINE", "ThorVG initialization failed.");
+        return;
+    }
+    initialized = true;
+
     canvas = engine->genCanvas();
     if (!canvas) {
         LOGERR("ENGINE", "Canvas initialization failed.");
@@ -661,6 +659,7 @@ TestCanvas::TestCanvas(const char* engineType, uint32_t w, uint32_t h, ColorSpac
 TestCanvas::~TestCanvas()
 {
     delete(canvas);
+    if (initialized) Initializer::term();
     delete(engine);
 }
 
