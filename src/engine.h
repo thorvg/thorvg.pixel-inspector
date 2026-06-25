@@ -31,11 +31,7 @@ struct TestEngine;
 
 struct TestCanvas
 {
-    static constexpr uint32_t DefaultWidth = 100;
-    static constexpr uint32_t DefaultHeight = 100;
-
-    explicit TestCanvas(const char* engineType = "sw", uint32_t w = DefaultWidth, uint32_t h = DefaultHeight, tvg::ColorSpace cs = tvg::ColorSpace::ABGR8888S);
-    TestCanvas(const char* engineType, tvg::ColorSpace cs);
+    explicit TestCanvas(const char* engineType = "sw", uint32_t w = 100, uint32_t h = 100, tvg::ColorSpace cs = tvg::ColorSpace::ABGR8888S);
 
     TestCanvas(const TestCanvas&) = delete;
     TestCanvas& operator=(const TestCanvas&) = delete;
