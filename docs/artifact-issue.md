@@ -60,21 +60,15 @@ In short: the project loaded fonts for correctness in some assets, but that same
 
 ## Fix
 
-The runner now splits assets into two groups:
+The runner now keeps resource asset rendering separate from draw tests:
 
-- `plainAssets`: assets that do not reference the bundled families
-- `fontAssets`: assets that do reference them
+1. Render all resource assets in a clean session without loading bundled fonts.
+2. Run draw tests in a fresh session after loading bundled fonts, because many draw tests explicitly require those families.
 
-Rendering is done in separate passes:
-
-1. Render `plainAssets` in a clean session without loading bundled fonts.
-2. Render `fontAssets` in a fresh session after loading bundled fonts.
-3. Run draw tests in the font-loaded session, because many draw tests explicitly require those families.
-
-This keeps font-dependent coverage intact without contaminating unrelated SVG rendering.
+This keeps draw-test text coverage intact without contaminating resource asset rendering.
 
 ## Result
 
 - `svg2009.svg` no longer shows the artifact in the software backend path.
-- Font-dependent assets still render with the intended bundled fonts.
+- Font-dependent draw tests still render with the intended bundled fonts.
 - The issue is documented as a font-scope/render-state problem, not a PNG saver problem.

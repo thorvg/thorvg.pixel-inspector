@@ -20,11 +20,8 @@
  * SOFTWARE.
  */
 
-#include <array>
 #include <cstring>
 #include <filesystem>
-#include <fstream>
-#include <iterator>
 
 #include <thorvg.h>
 
@@ -79,27 +76,6 @@ static void _loadFonts()
     }
 }
 
-static bool _needsBundledFonts(const std::string& asset)
-{
-    static constexpr std::array<const char*, 6> families = {
-        "DMSans",
-        "NOTO-SANS-KR",
-        "NanumGothicCoding",
-        "Pretendard",
-        "PublicSans-Regular",
-        "SentyCloud"
-    };
-
-    std::ifstream stream(asset, std::ios::binary);
-    if (!stream) return false;
-
-    const std::string contents((std::istreambuf_iterator<char>(stream)), std::istreambuf_iterator<char>());
-    for (const auto* family : families) {
-        if (contents.find(family) != std::string::npos) return true;
-    }
-    return false;
-}
-
 static bool _saveDrawTest(TestCanvas* canvas, tvgdraw::DrawTest* drawTest, const char* filename)
 {
     if (!canvas->clear()) return false;
@@ -139,25 +115,10 @@ Runner::Runner(const TestConfig& config) : config(config)
 
 bool Runner::run()
 {
-    std::vector<std::string> plainAssets;
-    std::vector<std::string> fontAssets;
-    plainAssets.reserve(assets.size());
-    fontAssets.reserve(assets.size());
-    for (const auto& asset : assets) {
-        if (_needsBundledFonts(asset)) {
-            fontAssets.push_back(asset);
-        } else {
-            plainAssets.push_back(asset);
-        }
-    }
-
-    LOG("RUNNER", "Assets without bundled fonts: %zu", plainAssets.size());
-    LOG("RUNNER", "Assets with bundled fonts: %zu", fontAssets.size());
-
-    auto savePngAndEval = [this](const std::string& backend, TestCanvas* canvas, Evaluator* evaluatorQueue, const std::vector<std::string>& batch) {
+    auto savePngAndEval = [this](const std::string& backend, TestCanvas* canvas, Evaluator* evaluatorQueue) {
         LOG("RUNNER", "Backend: %s", backend.c_str());
         PngSaver saver(config.maxWidth);
-        for (const auto& asset : batch) {
+        for (const auto& asset : assets) {
             auto target = _path(config.resourceTargetDir, config.outputDir, backend, asset, evaluatorQueue ? "test" : "golden");
             LOG("RUNNER", "Started: %s", asset.c_str());
             auto rendered = false;
@@ -219,25 +180,25 @@ bool Runner::run()
         }
     };
 
-    auto saveBackendAndEval = [this, &plainAssets, &fontAssets, &savePngAndEval, &saveDrawTestsAndEval](const std::string& backend, Evaluator* evaluatorQueue) {
-        auto runPass = [&](const std::vector<std::string>& batch, bool loadFonts, bool drawTests) {
-            if (batch.empty() && !drawTests) return;
-
-            TestCanvas canvas(backend.c_str());
-            if (!canvas.ptr()) {
+    auto saveBackendAndEval = [&savePngAndEval, &saveDrawTestsAndEval](const std::string& backend, Evaluator* evaluatorQueue) {
+        {
+            TestCanvas assetCanvas(backend.c_str());
+            if (!assetCanvas.ptr()) {
                 LOGERR("RUNNER", "Skipping backend: %s", backend.c_str());
                 return;
             }
+            savePngAndEval(backend, &assetCanvas, evaluatorQueue);
+        }
 
-            // Keep SVG/Lottie assets that rely on bundled fonts isolated from plain assets.
-            if (loadFonts) _loadFonts();
+        if (tvgdraw::DrawTestRegistry::entries().empty()) return;
 
-            if (!batch.empty()) savePngAndEval(backend, &canvas, evaluatorQueue, batch);
-            if (drawTests) saveDrawTestsAndEval(backend, &canvas, evaluatorQueue);
-        };
-
-        runPass(plainAssets, false, false);
-        runPass(fontAssets, true, !tvgdraw::DrawTestRegistry::entries().empty());
+        TestCanvas drawTestCanvas(backend.c_str());
+        if (!drawTestCanvas.ptr()) {
+            LOGERR("RUNNER", "Skipping draw tests backend: %s", backend.c_str());
+            return;
+        }
+        _loadFonts();
+        saveDrawTestsAndEval(backend, &drawTestCanvas, evaluatorQueue);
     };
 
     auto saveReport = [this](const TestResult& result) {
