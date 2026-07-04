@@ -486,6 +486,7 @@ private:
 struct TestWgEngine : TestEngine
 {
     WGPUInstance instance = nullptr;
+    WGPUAdapter adapter = nullptr;
     WGPUDevice device = nullptr;
     WGPUTexture texture = nullptr;
     WGPUTextureFormat format = WGPUTextureFormat_BGRA8Unorm;
@@ -496,7 +497,6 @@ struct TestWgEngine : TestEngine
         instance = wgpuCreateInstance(nullptr);
         if (!instance) return;
 
-        WGPUAdapter adapter = nullptr;
         auto onAdapterRequestEnded = [](WGPURequestAdapterStatus, WGPUAdapter adapter, WGPUStringView, void* userdata1, void*) {
             *((WGPUAdapter*)userdata1) = adapter;
         };
@@ -527,7 +527,6 @@ struct TestWgEngine : TestEngine
         requestDeviceCallback.userdata1 = &device;
         wgpuAdapterRequestDevice(adapter, &deviceDesc, requestDeviceCallback);
 
-        wgpuAdapterRelease(adapter);
         if (!device) return;
 
         createTexture(width, height);
@@ -544,26 +543,27 @@ struct TestWgEngine : TestEngine
             wgpuDeviceDestroy(device);
             wgpuDeviceRelease(device);
         }
+        if (adapter) wgpuAdapterRelease(adapter);
         if (instance) wgpuInstanceRelease(instance);
     }
 
     bool init() override
     {
-        if (!instance || !device) return false;
+        if (!instance || !adapter || !device) return false;
         Initializer::init(THREAD_COUNT);
         return true;
     }
 
     Canvas* genCanvas() override
     {
-        if (!instance || !device) return nullptr;
+        if (!instance || !adapter || !device) return nullptr;
         return WgCanvas::gen(EngineOption::Default);
     }
 
     Result resize(Canvas* canvas, uint32_t w, uint32_t h) override
     {
         if (!canvas || !createTexture(w, h)) return Result::InvalidArguments;
-        auto ret = static_cast<WgCanvas*>(canvas)->target(device, instance, texture, w, h, colorSpace, 1);
+        auto ret = static_cast<WgCanvas*>(canvas)->target({instance, adapter, device}, texture, w, h, colorSpace, 1);
         if (ret == Result::Success) {
             width = w;
             height = h;
