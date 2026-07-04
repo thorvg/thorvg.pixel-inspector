@@ -181,7 +181,8 @@ bool Runner::run()
     };
 
     auto saveBackendAndEval = [&savePngAndEval, &saveDrawTestsAndEval](const std::string& backend, Evaluator* evaluatorQueue) {
-        TestCanvas canvas(backend.c_str());
+        auto colorSpace = backend == "wg" ? tvg::ColorSpace::ABGR8888 : tvg::ColorSpace::ABGR8888S;
+        TestCanvas canvas(backend.c_str(), colorSpace);
         if (!canvas.ptr()) {
             LOGERR("RUNNER", "Skipping backend: %s", backend.c_str());
             return;
