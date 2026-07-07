@@ -457,20 +457,20 @@ private:
 
     const uint8_t* mapBuffer(WGPUInstance instance)
     {
-        WGPUMapAsyncStatus mapStatus = WGPUMapAsyncStatus_Unknown;
+        bool mapped = false;
 
         WGPUBufferMapCallbackInfo callback = {};
         callback.mode = WGPUCallbackMode_AllowProcessEvents;
-        callback.callback = [](WGPUMapAsyncStatus status, WGPUStringView, void* userdata1, void*) {
-            *((WGPUMapAsyncStatus*)userdata1) = status;
+        callback.callback = [](WGPUMapAsyncStatus, WGPUStringView, void* userdata1, void*) {
+            *((bool*)userdata1) = true;
         };
-        callback.userdata1 = &mapStatus;
+        callback.userdata1 = &mapped;
 
         wgpuBufferMapAsync(buffer, WGPUMapMode_Read, 0, size, callback);
 
         using clock = std::chrono::steady_clock;
         auto timeout = clock::now() + std::chrono::seconds(5);
-        while (mapStatus == WGPUMapAsyncStatus_Unknown && clock::now() < timeout) {
+        while (!mapped && clock::now() < timeout) {
             wgpuInstanceProcessEvents(instance);
             std::this_thread::yield();
         }
