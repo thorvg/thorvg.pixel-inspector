@@ -30,6 +30,7 @@
 #include "evaluator.h"
 #include "drawTest.h"
 #include "htmlSaver.h"
+#include "mdSaver.h"
 #include "pngSaver.h"
 
 static std::filesystem::path _path(const std::string& resourceTargetDir, const std::string& outputDir, const std::string& backend, const std::string& asset, const char* role)
@@ -86,7 +87,7 @@ static bool _saveDrawTest(TestCanvas* canvas, tvgdraw::DrawTest* drawTest, const
 static bool _passed(const TestResult& result)
 {
     for (const auto& backend : result.backends) {
-        if (backend.summary.different > 0 || backend.summary.failed > 0) return false;
+        if (backend.summary.differences > 0 || backend.summary.errors > 0) return false;
     }
     return true;
 }
@@ -119,7 +120,7 @@ bool Runner::run()
         LOG("RUNNER", "Backend: %s", backend.c_str());
         PngSaver saver(config.maxWidth);
         for (const auto& asset : assets) {
-            auto target = _path(config.resourceTargetDir, config.outputDir, backend, asset, evaluatorQueue ? "test" : "golden");
+            auto target = _path(config.resourceTargetDir, config.outputDir, backend, asset, evaluatorQueue ? "actual" : "golden");
             LOG("RUNNER", "Started: %s", asset.c_str());
             auto rendered = false;
             if (canvas && canvas->recreate()) {
@@ -152,7 +153,7 @@ bool Runner::run()
         LOG("RUNNER", "Draw test backend: %s", backend.c_str());
         for (const auto& entry : drawTests) {
             auto drawTest = entry.factory();
-            const auto target = _drawTestPath(config.outputDir, backend, entry.name, evaluatorQueue ? "test" : "golden");
+            const auto target = _drawTestPath(config.outputDir, backend, entry.name, evaluatorQueue ? "actual" : "golden");
             auto rendered = false;
             if (drawTest) {
                 if (canvas && canvas->recreate()) {
@@ -193,23 +194,32 @@ bool Runner::run()
     };
 
     auto saveReport = [this](const TestResult& result) {
-        const auto reportPath = std::filesystem::path(config.outputDir) / "reporter.html";
-        const auto saved = HtmlSaver().save(result, config.outputDir);
-        if (saved) {
-            LOG("RUNNER", "Report: %s", reportPath.string().c_str());
+        const auto htmlPath = std::filesystem::path(config.outputDir) / "reporter.html";
+        const auto htmlSaved = HtmlSaver().save(result, config.outputDir);
+        if (htmlSaved) {
+            LOG("RUNNER", "Report: %s", htmlPath.string().c_str());
         } else {
             LOGERR("RUNNER", "Failed to create report: %s", config.outputDir.c_str());
         }
-        return saved;
+
+        const auto mdPath = std::filesystem::path(config.outputDir) / "reporter.md";
+        const auto mdSaved = MdSaver().save(result, config.outputDir);
+        if (mdSaved) {
+            LOG("RUNNER", "Summary: %s", mdPath.string().c_str());
+        } else {
+            LOGERR("RUNNER", "Failed to create summary: %s", config.outputDir.c_str());
+        }
+        return htmlSaved && mdSaved;
     };
 
     if (config.updateGolden) {
         LOG("RUNNER", "Updating golden images...");
         _removeBySuffix(config.outputDir, ".golden.png");
-        _removeBySuffix(config.outputDir, ".test.png");
+        _removeBySuffix(config.outputDir, ".actual.png");
         _removeBySuffix(config.outputDir, ".diff.png");
         std::error_code error;
         std::filesystem::remove(std::filesystem::path(config.outputDir) / "reporter.html", error);
+        std::filesystem::remove(std::filesystem::path(config.outputDir) / "reporter.md", error);
         for (const auto& backend : config.backends) saveBackendAndEval(backend, nullptr);
         LOG("RUNNER", "Golden images updated.");
         return true;
@@ -217,9 +227,10 @@ bool Runner::run()
 
     LOG("RUNNER", "Starting tests...");
     std::error_code error;
-    _removeBySuffix(config.outputDir, ".test.png");
+    _removeBySuffix(config.outputDir, ".actual.png");
     _removeBySuffix(config.outputDir, ".diff.png");
     std::filesystem::remove(std::filesystem::path(config.outputDir) / "reporter.html", error);
+    std::filesystem::remove(std::filesystem::path(config.outputDir) / "reporter.md", error);
 
     Evaluator evaluatorQueue(config);
     for (const auto& backend : config.backends) saveBackendAndEval(backend, &evaluatorQueue);

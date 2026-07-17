@@ -3,6 +3,8 @@ source_file = [
    'htmlSaver.cpp',
    'lodepng.h',
    'lodepng.cpp',
+   'mdSaver.h',
+   'mdSaver.cpp',
    'pngSaver.h',
    'pngSaver.cpp',
 ]

@@ -73,15 +73,15 @@ struct TestResult
     struct Summary
     {
         uint32_t compared = 0;
-        uint32_t different = 0;
-        uint32_t failed = 0;
+        uint32_t differences = 0;
+        uint32_t errors = 0;
     };
 
     struct Comparison
     {
         std::string asset;
         std::string golden;
-        std::string test;
+        std::string actual;
         std::string diff;
         std::vector<float> metricValues;
         bool different = false;
@@ -92,7 +92,7 @@ struct TestResult
         std::string name;
         Summary summary;
         std::vector<Comparison> comparisons;
-        std::vector<std::string> failed;
+        std::vector<std::string> errors;
     };
 
     TestConfig config;
