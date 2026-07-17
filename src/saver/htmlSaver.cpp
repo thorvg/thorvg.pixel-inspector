@@ -111,7 +111,7 @@ th { background: #f0f3f6; font-size: 11px; text-align: left; text-transform: upp
 .comparison th:nth-child(2) { width: 20%; }
 .comparison th:nth-child(3), .comparison th:nth-child(4), .comparison th:nth-child(5) { width: 18%; }
 .pass { color: #1a7f37; }
-.diff, .failed { color: #cf222e; }
+.diff, .errors { color: #cf222e; }
 .images { min-width: 190px; text-align: center; background: #fbfbfc; }
 .images img { display: block; max-width: 100%; max-height: 210px; margin: 0 auto; border: 1px solid #d8dee4; }
 .pixel-inspector { position: fixed; display: none; z-index: 10; padding: 10px; border: 1px solid #8c959f; background: #fff; box-shadow: 0 12px 32px rgba(31,35,40,.18); pointer-events: none; }
@@ -121,7 +121,7 @@ th { background: #f0f3f6; font-size: 11px; text-align: left; text-transform: upp
 .pixel-inspector b { display: block; margin: 0 0 4px; font-size: 11px; text-transform: uppercase; }
 .pixel-inspector canvas { width: 180px; height: 180px; border: 1px solid #d0d7de; background: #fbfbfc; image-rendering: pixelated; }
 .rgba { margin-top: 4px; font-size: 11px; }
-.failed-list { margin: 8px 0 0; padding-left: 20px; }
+.errors-list { margin: 8px 0 0; padding-left: 20px; }
 tr[hidden] { display: none; }
 @media (max-width: 900px) {
     main { padding: 14px; }
@@ -232,12 +232,12 @@ static constexpr auto Script = R"JS(
   const coord = inspector.querySelector('.coord');
   const canvases = {
     golden: inspector.querySelector('canvas[data-role="golden"]'),
-    test: inspector.querySelector('canvas[data-role="test"]'),
+    actual: inspector.querySelector('canvas[data-role="actual"]'),
     diff: inspector.querySelector('canvas[data-role="diff"]')
   };
   const labels = {
     golden: inspector.querySelector('.rgba[data-role="golden"]'),
-    test: inspector.querySelector('.rgba[data-role="test"]'),
+    actual: inspector.querySelector('.rgba[data-role="actual"]'),
     diff: inspector.querySelector('.rgba[data-role="diff"]')
   };
   const pixel = document.createElement('canvas');
@@ -339,8 +339,8 @@ TestResult::Summary _total(const TestResult& result)
     TestResult::Summary total;
     for (const auto& backend : result.backends) {
         total.compared += backend.summary.compared;
-        total.different += backend.summary.different;
-        total.failed += backend.summary.failed;
+        total.differences += backend.summary.differences;
+        total.errors += backend.summary.errors;
     }
     return total;
 }
@@ -354,8 +354,8 @@ void _writeSummary(std::ofstream& report, const TestResult& result)
     report << "<section class=\"summary\">";
     report << "<div><span>compared</span><b>" << total.compared << "</b></div>";
     report << "<div><span>stored</span><b>" << stored << "</b></div>";
-    report << "<div><span>different</span><b>" << total.different << "</b></div>";
-    report << "<div><span>failed</span><b class=\"failed\">" << total.failed << "</b></div>";
+    report << "<div><span>differences</span><b>" << total.differences << "</b></div>";
+    report << "<div><span>errors</span><b class=\"errors\">" << total.errors << "</b></div>";
     report << "</section>";
 }
 
@@ -396,12 +396,12 @@ void _writeMetricCells(std::ofstream& report, const TestResult& result, const Te
     }
 }
 
-void _writeFailed(std::ofstream& report, const TestResult::BackendResult& backend)
+void _writeErrors(std::ofstream& report, const TestResult::BackendResult& backend)
 {
-    if (backend.failed.empty()) return;
+    if (backend.errors.empty()) return;
 
-    report << "<h3>Failed</h3><ul class=\"failed-list\">";
-    for (const auto& failure : backend.failed) report << "<li><code>" << _html(failure) << "</code></li>";
+    report << "<h3>Errors</h3><ul class=\"errors-list\">";
+    for (const auto& error : backend.errors) report << "<li><code>" << _html(error) << "</code></li>";
     report << "</ul>";
 }
 
@@ -411,8 +411,8 @@ void _writeBackend(std::ofstream& report, const TestResult& result, const TestRe
     report << "<h2>" << _html(backend.name) << "</h2>";
     report << "<p class=\"muted\">compared " << backend.summary.compared
            << ", stored " << backend.comparisons.size()
-           << ", different " << backend.summary.different
-           << ", failed " << backend.summary.failed << "</p>";
+           << ", differences " << backend.summary.differences
+           << ", errors " << backend.summary.errors << "</p>";
 
     auto comparisons = backend.comparisons;
     std::sort(comparisons.begin(), comparisons.end(), [](const auto& a, const auto& b) {
@@ -421,7 +421,7 @@ void _writeBackend(std::ofstream& report, const TestResult& result, const TestRe
 
     report << "<details open><summary data-total=\"" << comparisons.size() << "\">Comparisons (" << comparisons.size() << " shown / " << comparisons.size() << " total)</summary>";
     report << "<div class=\"comparison\"><table><thead><tr>";
-    report << "<th>status</th><th>asset</th><th>golden</th><th>test</th><th>diff</th>";
+    report << "<th>status</th><th>asset</th><th>golden</th><th>actual</th><th>diff</th>";
     _writeMetricHeader(report, result);
     report << "</tr></thead><tbody>";
     for (const auto& comparison : comparisons) {
@@ -431,14 +431,14 @@ void _writeBackend(std::ofstream& report, const TestResult& result, const TestRe
         report << "<td class=\"status " << (comparison.different ? "diff" : "pass") << "\" data-label=\"status\">" << (comparison.different ? "diff" : "pass") << "</td>";
         report << "<td class=\"asset\" data-label=\"asset\">" << _html(comparison.asset) << "</td>";
         _writeImage(report, reportPath, comparison.golden, "golden");
-        _writeImage(report, reportPath, comparison.test, "test");
+        _writeImage(report, reportPath, comparison.actual, "actual");
         _writeImage(report, reportPath, comparison.diff, "diff");
         _writeMetricCells(report, result, comparison);
         report << "</tr>";
     }
     report << "</tbody></table></div></details>";
 
-    _writeFailed(report, backend);
+    _writeErrors(report, backend);
     report << "</section>";
 }
 
@@ -449,7 +449,7 @@ void _writeInspector(std::ofstream& report)
   <div class="coord">x -, y -</div>
   <div class="views">
     <div><b>golden</b><canvas data-role="golden" width="180" height="180"></canvas><div class="rgba" data-role="golden">RGBA -</div></div>
-    <div><b>test</b><canvas data-role="test" width="180" height="180"></canvas><div class="rgba" data-role="test">RGBA -</div></div>
+    <div><b>actual</b><canvas data-role="actual" width="180" height="180"></canvas><div class="rgba" data-role="actual">RGBA -</div></div>
     <div><b>diff</b><canvas data-role="diff" width="180" height="180"></canvas><div class="rgba" data-role="diff">RGBA -</div></div>
   </div>
 </div>

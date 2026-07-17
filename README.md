@@ -20,7 +20,7 @@ weighted RGBA pixel diff evaluator.
 
 - Renders SVG and Lottie assets with ThorVG backends.
 - Compares rendered PNGs against golden images with weighted RGBA pixel diff.
-- Provides HTML reports.
+- Provides HTML reports and a compact markdown summary for CI.
 
 ## Requirements
 
@@ -93,7 +93,7 @@ compared against those golden images.
 
 - Pixels are compared by RGBA Chebyshev distance, which uses the largest channel
   delta among R, G, B, and A.
-- Fully transparent pixels (alpha 0 in both the golden and the test) are
+- Fully transparent pixels (alpha 0 in both the golden and the actual) are
   excluded; every other pixel is compared.
 - A pixel counts as different when its distance exceeds
   `--max-channel-distance-threshold` (default `0`, so any non-identical pixel
@@ -132,38 +132,42 @@ SVG pictures, and clipping.
 ```text
 output/
   reporter.html
+  reporter.md
   draw_test/
     viewport.gl.golden.png
-    viewport.gl.test.png
+    viewport.gl.actual.png
     viewport.gl.diff.png
     viewport.wg.golden.png
-    viewport.wg.test.png
+    viewport.wg.actual.png
     viewport.wg.diff.png
     viewport.sw.golden.png
-    viewport.sw.test.png
+    viewport.sw.actual.png
     viewport.sw.diff.png
     ...
   lottie/
     sample.gl.golden.png
-    sample.gl.test.png
+    sample.gl.actual.png
     sample.gl.diff.png
     sample.sw.golden.png
     ...
   svg/
     logo.gl.golden.png
-    logo.gl.test.png
+    logo.gl.actual.png
     logo.gl.diff.png
     logo.gl.sw.png
     ...
 ```
 
-The report file is written directly under the output directory.
+The report files are written directly under the output directory:
+`reporter.html` is the full interactive report, and `reporter.md` is a compact
+markdown summary (per-backend `Compared`, `Differences`, `Errors` counts) that
+CI can publish as-is.
 Generated image paths use each asset path relative to the resource directory:
 
 ```text
 res/target/lottie/sample.json
   -> output/lottie/sample.sw.golden.png
-  -> output/lottie/sample.sw.test.png
+  -> output/lottie/sample.sw.actual.png
   -> output/lottie/sample.sw.diff.png
 ```
 

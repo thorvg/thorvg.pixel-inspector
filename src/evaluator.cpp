@@ -126,50 +126,50 @@ void Evaluator::run()
 
         auto backendResult = std::find_if(result.backends.begin(), result.backends.end(), [&task](const auto& backend) { return backend.name == task.backend; });
 
-        // Failed Cases: missing render
+        // Error Cases: missing render
         if (!task.rendered) {
-            ++backendResult->summary.failed;
-            backendResult->failed.push_back(task.relative);
+            ++backendResult->summary.errors;
+            backendResult->errors.push_back(task.relative);
             LOGERR("EVALUATOR", "Failed to render: %s", task.asset.c_str());
             continue;
         }
 
-        // Failed Cases: missing comparison target
-        if (!std::filesystem::exists(task.golden) || !std::filesystem::exists(task.test)) {
-            ++backendResult->summary.failed;
-            backendResult->failed.push_back(task.relative);
+        // Error Cases: missing comparison target
+        if (!std::filesystem::exists(task.golden) || !std::filesystem::exists(task.actual)) {
+            ++backendResult->summary.errors;
+            backendResult->errors.push_back(task.relative);
             LOGERR("EVALUATOR", "Missing comparison target: %s", task.asset.c_str());
             continue;
         }
 
         // Compare and save diff
-        auto imageDiff = evaluate(task.golden.c_str(), task.test.c_str());
+        auto imageDiff = evaluate(task.golden.c_str(), task.actual.c_str());
         if (!imageDiff.ok) {
-            ++backendResult->summary.failed;
-            backendResult->failed.push_back(task.relative);
+            ++backendResult->summary.errors;
+            backendResult->errors.push_back(task.relative);
             LOGERR("EVALUATOR", "Failed to compare: %s", task.asset.c_str());
             continue;
         }
         ++backendResult->summary.compared;
 
         if (imageDiff.different) {
-            ++backendResult->summary.different;
+            ++backendResult->summary.differences;
         }
 
         if (!saveResult(task.diff.c_str())) {
-            ++backendResult->summary.failed;
+            ++backendResult->summary.errors;
             LOGERR("EVALUATOR", "Failed to create diff image: %s", task.asset.c_str());
             continue;
         }
 
         LOG("EVALUATOR", "%s evaluator=%s %s", task.relative.c_str(), EvaluatorName, _metricLog(result.metrics, imageDiff.metricValues).c_str());
-        backendResult->comparisons.push_back({task.relative, task.golden, task.test, task.diff, std::move(imageDiff.metricValues), imageDiff.different});
+        backendResult->comparisons.push_back({task.relative, task.golden, task.actual, task.diff, std::move(imageDiff.metricValues), imageDiff.different});
     }
 
     // Log summary
     for (const auto& backendResult : result.backends) {
-        LOG("EVALUATOR", "%s %s: compared=%u different=%u failed=%u",
-            EvaluatorName, backendResult.name.c_str(), backendResult.summary.compared, backendResult.summary.different, backendResult.summary.failed);
+        LOG("EVALUATOR", "%s %s: compared=%u differences=%u errors=%u",
+            EvaluatorName, backendResult.name.c_str(), backendResult.summary.compared, backendResult.summary.differences, backendResult.summary.errors);
     }
 }
 
@@ -183,15 +183,15 @@ const std::vector<TestResult::Metric>& Evaluator::metrics() const
     return metrics;
 }
 
-Evaluator::ImageDiff Evaluator::evaluate(const char* golden, const char* testFile)
+Evaluator::ImageDiff Evaluator::evaluate(const char* golden, const char* actualFile)
 {
     width = 0;
     height = 0;
 
     PngImage goldenImage;
-    PngImage test;
-    if (!_loadRGBA(golden, &goldenImage) || !_loadRGBA(testFile, &test)) return {};
-    if (goldenImage.w != test.w || goldenImage.h != test.h || goldenImage.w == 0 || goldenImage.h == 0) return {};
+    PngImage actual;
+    if (!_loadRGBA(golden, &goldenImage) || !_loadRGBA(actualFile, &actual)) return {};
+    if (goldenImage.w != actual.w || goldenImage.h != actual.h || goldenImage.w == 0 || goldenImage.h == 0) return {};
 
     width = goldenImage.w;
     height = goldenImage.h;
@@ -204,18 +204,18 @@ Evaluator::ImageDiff Evaluator::evaluate(const char* golden, const char* testFil
     for (size_t i = 0; i < pixelCount; ++i) {
         const auto offset = i * 4;
         const auto goldenPixel = goldenImage.pixels.data() + offset;
-        const auto testPixel = test.pixels.data() + offset;
+        const auto actualPixel = actual.pixels.data() + offset;
         uint32_t distance = 0;
 
         // Ignore fully transparent pixels so their RGBA payload does not affect comparison.
-        const auto transparent = goldenPixel[3] == 0 && testPixel[3] == 0;
+        const auto transparent = goldenPixel[3] == 0 && actualPixel[3] == 0;
         if (!transparent) {
             // Compare visible pixels with RGBA Chebyshev distance: the largest absolute channel delta.
             distance = static_cast<uint32_t>(std::max({
-                std::abs(goldenPixel[0] - testPixel[0]),
-                std::abs(goldenPixel[1] - testPixel[1]),
-                std::abs(goldenPixel[2] - testPixel[2]),
-                std::abs(goldenPixel[3] - testPixel[3])
+                std::abs(goldenPixel[0] - actualPixel[0]),
+                std::abs(goldenPixel[1] - actualPixel[1]),
+                std::abs(goldenPixel[2] - actualPixel[2]),
+                std::abs(goldenPixel[3] - actualPixel[3])
             }));
             ++comparedPixels;
             if (distance > result.config.threshold.maxChannelDistance) {
