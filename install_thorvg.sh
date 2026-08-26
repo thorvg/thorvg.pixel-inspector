@@ -38,7 +38,8 @@ meson setup "$BUILDDIR" --wipe \
     -Dengines=all \
     -Dloaders=all \
     -Dsavers=all \
-    -Dextra=lottie_exp,openmp
+    -Dextra=lottie_exp,openmp \
+    -Dstatic=true
 
 echo "Building ThorVG..."
 ninja -C "$BUILDDIR"
