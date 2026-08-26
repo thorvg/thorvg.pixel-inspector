@@ -86,6 +86,7 @@ compared against those golden images.
 | `--max-width=<px>` | PNG fit cell width. Images are scaled to fit this box while preserving aspect ratio. |
 | `--max-channel-distance-threshold=<value>` | Max-channel distance threshold. A pixel counts as different when its RGBA Chebyshev distance exceeds this. Default `0`. |
 | `--diff-ratio-threshold=<value>` | Diff ratio threshold. An image is marked different when its diff ratio exceeds this. Default `0`. |
+| `--skip-draw-tests` | Skip registered C++ draw tests. |
 | `--update-golden` | Update golden images. |
 | `--help` | Print command line help. |
 
@@ -126,6 +127,12 @@ into the inspector and registered at startup.
 Current draw tests cover shapes, paths, gradients, gradient strokes, fill rules,
 fill spread modes, scenes, opacity, trim paths, text layout, raw picture tiling,
 SVG pictures, and clipping.
+
+### CI
+
+The asset workflow runs `base`, `lottie`, and `svg` as independent matrix jobs.
+The `base` job also runs the registered C++ draw tests; the other jobs use
+`--skip-draw-tests` to avoid running the same draw tests multiple times.
 
 ### Visual walkthrough
 
