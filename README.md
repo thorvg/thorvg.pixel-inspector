@@ -127,6 +127,30 @@ Current draw tests cover shapes, paths, gradients, gradient strokes, fill rules,
 fill spread modes, scenes, opacity, trim paths, text layout, raw picture tiling,
 SVG pictures, and clipping.
 
+### Visual walkthrough
+
+The workspace includes a three-episode tmath series that explains the run
+pipeline, the pixel evaluator, and the draw-test registration path. With the
+tmath VS Code extension installed, open this repository and run
+**tmath: Open Viewer**, then select the `pixel-inspector` series.
+
+To exercise the same flow from the command line:
+
+```sh
+meson setup builddir
+meson compile -C builddir
+
+# Create or refresh the baseline images.
+./builddir/src/tvg-pixel-inspector --update-golden --backend=sw
+
+# Render actual images, compare them, and write the reports.
+./builddir/src/tvg-pixel-inspector --backend=sw
+```
+
+Open `output/reporter.html` for the full comparison and `output/reporter.md`
+for the compact summary. A comparison run exits with status `1` when a backend
+has differences or errors.
+
 ## Output
 
 ```text
