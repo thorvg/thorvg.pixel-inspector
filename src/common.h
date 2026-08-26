@@ -60,6 +60,7 @@ struct TestConfig
     uint32_t maxWidth = DEFAULT_MAX_WIDTH;
     Threshold threshold;
     bool updateGolden = false;
+    bool drawTests = true;
 };
 
 struct TestResult

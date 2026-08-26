@@ -109,7 +109,7 @@ Runner::Runner(const TestConfig& config) : config(config)
     LOG("RUNNER", "Max-channel distance threshold: %u", config.threshold.maxChannelDistance);
     LOG("RUNNER", "Diff ratio threshold: %.6f", config.threshold.diffRatio);
     LOG("RUNNER", "Assets: %zu", assets.size());
-    LOG("RUNNER", "Draw tests: %zu", tvgdraw::DrawTestRegistry::entries().size());
+    LOG("RUNNER", "Draw tests: %zu", config.drawTests ? tvgdraw::DrawTestRegistry::entries().size() : 0);
 
     if (config.updateGolden) LOG("RUNNER", "Update golden mode enabled.");
 }
@@ -147,6 +147,7 @@ bool Runner::run()
     };
 
     auto saveDrawTestsAndEval = [this](const std::string& backend, TestCanvas* canvas, Evaluator* evaluatorQueue) {
+        if (!config.drawTests) return;
         const auto& drawTests = tvgdraw::DrawTestRegistry::entries();
         if (drawTests.empty()) return;
 
