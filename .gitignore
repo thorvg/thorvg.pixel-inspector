@@ -3,7 +3,7 @@ builddir
 doc
 .a*
 .c*
-.vscode
+.vscode/*
 .idea
 *.swp
 *.tvg
@@ -13,3 +13,4 @@ doc
 temp
 compile_commands.json
 output/*
+res/target/thorvg.test-suite/
