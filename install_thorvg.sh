@@ -9,6 +9,7 @@ WORKDIR="$ROOTDIR/temp"
 SRCDIR="$WORKDIR/thorvg"
 BUILDDIR="$SRCDIR/builddir"
 INSTALLDIR="$WORKDIR/thorvg-install"
+ENGINES="${THORVG_ENGINES:-all}"
 
 echo "Cloning ThorVG into: $SRCDIR"
 if [[ ! -d "$SRCDIR" ]]; then
@@ -35,7 +36,7 @@ echo "Configuring ThorVG..."
 meson setup "$BUILDDIR" --wipe \
     --prefix "$INSTALLDIR" \
     --libdir lib \
-    -Dengines=all \
+    -Dengines="$ENGINES" \
     -Dloaders=all \
     -Dsavers=all \
     -Dextra=lottie_exp,openmp \
