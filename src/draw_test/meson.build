@@ -17,8 +17,6 @@ source_file = [
    'gradientMasking.cpp',
    'gradientTransform.cpp',
    'issue.cpp',
-   'v1_issues.cpp',
-   'v0_issues.cpp',
    'masking.cpp',
    'maskingMethods.cpp',
    'opacity.cpp',
