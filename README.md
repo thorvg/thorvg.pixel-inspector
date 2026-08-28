@@ -130,8 +130,8 @@ SVG pictures, and clipping.
 
 ### CI
 
-The asset workflow runs `base`, `lottie`, and `svg` as independent matrix jobs.
-The `base` job also runs the registered C++ draw tests; the other jobs use
+The asset workflow runs `basic`, `lottie`, and `svg` as independent matrix jobs.
+The `basic` job also runs the registered C++ draw tests; the other jobs use
 `--skip-draw-tests` to avoid running the same draw tests multiple times.
 
 ### Visual walkthrough
