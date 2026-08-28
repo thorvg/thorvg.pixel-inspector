@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16">
+	<radialGradient id="a" r="0.02237" spreadMethod="reflect">
+		<stop stop-color="#00c2ff" />
+		<stop offset="0.75" stop-color="#090622" />
+	</radialGradient>
+	<circle r="6" cx="50%" cy="50%" fill="url(#a)" />
+</svg>

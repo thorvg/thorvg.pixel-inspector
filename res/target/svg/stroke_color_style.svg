@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="64" height="64">
+<style>
+<![CDATA[.B{clip-path:url(#B)}.C{stroke:#f54a42}.D{stroke-width:10.75}.E{stroke-miterlimit:5}.F{stroke:#FF00FF}.G{stroke-opacity:0.5}]]>
+</style>
+
+	<g class="B">
+		<path clip-path="url(#F)" d="M10 10 L100 100 Z" fill="none" class="C D E F G C"/>
+	</g>
+</svg>

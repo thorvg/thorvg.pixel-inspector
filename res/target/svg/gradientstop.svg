@@ -1,0 +1,8 @@
+<svg viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+	<linearGradient id="b" spreadMethod="reflect" x2="12.1%" y2="5%">
+		<stop stop-color="#ffe345" offset="0.15" />
+		<stop stop-color="#ff4545" offset="0.5" stop-opacity="0.4" />
+	</linearGradient>
+	<stop offset="0.85" />
+	<circle r="6" cx="8" cy="8" fill="url(#b)" />
+</svg>

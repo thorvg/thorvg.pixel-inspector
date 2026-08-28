@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16">
+	<linearGradient id="a">
+		<stop stop-color="lime" />
+		<g>
+			<stop stop-color="yellow" offset="0.4" />
+			<circle r="3" cx="15" cy="1" />
+			<stop stop-color="orange" offset="0.8" />
+		</g>
+		<circle r="3" cx="1" cy="1" />
+	</linearGradient>
+	<circle fill="url(#a)" cx="8" cy="8" r="6" />
+</svg>

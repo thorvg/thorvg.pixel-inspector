@@ -1,0 +1,4 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="360" height="150" viewBox="0 0 360 150">
+  <rect width="360" height="150" fill="#ffffff"/>
+  <text x="20" y="90" font-family="PublicSans" font-size="24" fill="#222222"><tspan font-size="2em">Big</tspan> normal</text>
+</svg>
