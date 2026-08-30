@@ -3,3 +3,8 @@ option('backends',
   choices: ['cpu', 'gl', 'wg', 'all'],
   value: ['all'],
   description: 'Enable Pixel Inspector render backends')
+
+option('log',
+  type: 'boolean',
+  value: true,
+  description: 'Enable Pixel Inspector informational logs')

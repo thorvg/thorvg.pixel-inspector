@@ -3,6 +3,10 @@ cc = meson.get_compiler('cpp')
 compiler_flags = []
 pixel_inspector_source_file = []
 
+if get_option('log')
+    compiler_flags += ['-DTVGTEST_LOG_ENABLED']
+endif
+
 thorvg_dep = dependency('thorvg-1', required: true)
 pixel_inspector_dep = [thorvg_dep, ]
 
