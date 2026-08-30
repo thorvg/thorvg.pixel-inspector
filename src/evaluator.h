@@ -47,7 +47,7 @@ struct EvaluationTask
 class Evaluator
 {
 public:
-    explicit Evaluator(const TestConfig& config);
+    Evaluator(const TestConfig& config, uint32_t expected);
     ~Evaluator();
 
     Evaluator(const Evaluator&) = delete;
