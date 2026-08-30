@@ -62,7 +62,6 @@ static void _loadFonts()
 
 static bool _saveDrawTest(TestCanvas* canvas, tvgdraw::DrawTest* drawTest, const char* filename)
 {
-    if (!canvas->clear()) return false;
     if (!canvas->resize(drawTest->width, drawTest->height)) return false;
     return drawTest->draw(canvas->ptr()) && PngSaver(drawTest->width).save(canvas, filename);
 }
@@ -122,15 +121,19 @@ bool Runner::run()
 
     auto savePngAndEval = [this](const std::string& backend, TestCanvas* canvas, Evaluator* evaluatorQueue) {
         LOG("RUNNER", "Backend: %s", backend.c_str());
-        PngSaver saver(config.maxWidth);
+        auto saver = PngSaver(config.maxWidth);
         for (const auto& asset : assets) {
             auto target = _path(config.resourceTargetDir, config.outputDir, backend, asset, evaluatorQueue ? "actual" : "golden");
             LOG("RUNNER", "Started: %s", asset.c_str());
             auto rendered = false;
-            if (canvas && canvas->recreate()) {
-                rendered = saver.save(canvas, asset.c_str(), target.string().c_str());
+            if (canvas) {
+                if (backend == "wg" && !canvas->recreate()) {
+                    LOGERR("RUNNER", "Failed to recreate asset canvas: %s", backend.c_str());
+                } else {
+                    rendered = saver.save(canvas, asset.c_str(), target.string().c_str());
+                }
             } else {
-                LOGERR("RUNNER", "Failed to recreate asset canvas: %s", backend.c_str());
+                LOGERR("RUNNER", "Invalid asset canvas: %s", backend.c_str());
             }
             if (!rendered) LOGERR("RUNNER", "Failed: %s", asset.c_str());
 
