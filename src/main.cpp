@@ -58,11 +58,6 @@ static bool _next(int argc, char** argv, int* i, const char* name, const char** 
     return true;
 }
 
-static bool _support(const char* backend)
-{
-    return _equal(backend, "sw") || _equal(backend, "gl") || _equal(backend, "wg");
-}
-
 static std::string _trim(const char* begin, const char* end)
 {
     while (begin < end && std::isspace(static_cast<unsigned char>(*begin))) ++begin;
@@ -70,7 +65,7 @@ static std::string _trim(const char* begin, const char* end)
     return std::string(begin, end - begin);
 }
 
-static bool _append(std::vector<std::string>* backends, const char* value)
+static bool _append(std::vector<std::string>* backends, const std::vector<std::string>& supported, const char* value)
 {
     if (*value == '\0') return false;
 
@@ -80,7 +75,7 @@ static bool _append(std::vector<std::string>* backends, const char* value)
         while (*end != '\0' && *end != ',') ++end;
 
         auto backend = _trim(begin, end);
-        if (backend.empty() || !_support(backend.c_str())) return false;
+        if (backend.empty() || std::find(supported.begin(), supported.end(), backend) == supported.end()) return false;
         if (std::find(backends->begin(), backends->end(), backend) == backends->end()) {
             backends->push_back(backend);
         }
@@ -90,16 +85,6 @@ static bool _append(std::vector<std::string>* backends, const char* value)
     }
 
     return !backends->empty();
-}
-
-static void _normalizeBackends(std::vector<std::string>* backends)
-{
-    // Keep SW last because SwCanvas::target() updates ThorVG's global ImageLoader color space.
-    auto sw = std::find(backends->begin(), backends->end(), "sw");
-    if (sw == backends->end()) return;
-
-    backends->erase(sw);
-    backends->push_back("sw");
 }
 
 static bool _uint32(const char* value, uint32_t* result)
@@ -127,7 +112,7 @@ static void _help(const char* name)
     std::printf("Usage: %s [options]\n", name);
     std::printf("\n");
     std::printf("Options:\n");
-    std::printf("  --backend <sw|gl|wg>[,...]     render backend list (default: %s)\n", DEFAULT_BACKENDS_TEXT);
+    std::printf("  --backend <list>               render backend list\n");
     std::printf("  --resource <dir>               resource directory (default: TARGET_RESOURCE_DIR)\n");
     std::printf("  --output <dir>                 output directory (default: OUTPUT_DIR)\n");
     std::printf("  --max-width <px>               PNG fit cell width (default: %u)\n", DEFAULT_MAX_WIDTH);
@@ -140,11 +125,23 @@ static void _help(const char* name)
 
 static bool _parse(int argc, char** argv, TestConfig* config, bool* done)
 {
+    const std::vector<std::string> supported = {
+#if defined(TVGTEST_SDL_GL_SUPPORTED) || defined(TVGTEST_GL_SUPPORTED) || defined(TVGTEST_GLES_SUPPORTED)
+        "gl",
+#endif
+#if defined(TVGTEST_WG_SUPPORTED) || defined(TVGTEST_WGPU_SUPPORTED)
+        "wg",
+#endif
+#if defined(TVGTEST_CPU_SUPPORTED)
+        "cpu",
+#endif
+    };
+
     for (auto i = 1; i < argc; ++i) {
         const char* value = nullptr;
 
         if (_next(argc, argv, &i, "--backend", &value)) {
-            if (!_append(&config->backends, value)) return false;
+            if (!_append(&config->backends, supported, value)) return false;
         } else if (_next(argc, argv, &i, "--resource", &value)) {
             if (*value == '\0') return false;
             config->resourceTargetDir = value;
@@ -173,9 +170,11 @@ static bool _parse(int argc, char** argv, TestConfig* config, bool* done)
         } else return false;
     }
 
-    if (config->backends.empty()) config->backends = {"gl", "wg", "sw"};
-    else _normalizeBackends(&config->backends);
-    return true;
+    if (config->backends.empty()) config->backends = supported;
+    // Keep CPU last because SwCanvas::target() updates ThorVG's global ImageLoader color space.
+    auto cpu = std::find(config->backends.begin(), config->backends.end(), "cpu");
+    if (cpu != config->backends.end()) std::rotate(cpu, cpu + 1, config->backends.end());
+    return !config->backends.empty();
 }
 
 int main(int argc, char** argv)

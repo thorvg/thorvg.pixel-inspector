@@ -1,0 +1,5 @@
+option('backends',
+  type: 'array',
+  choices: ['cpu', 'gl', 'wg', 'all'],
+  value: ['all'],
+  description: 'Enable Pixel Inspector render backends')

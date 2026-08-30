@@ -14,4 +14,13 @@ add_project_arguments('-DTARGET_RESOURCE_DIR="@0@/res/target"'.format(pixel_insp
 add_project_arguments('-DEXAMPLE_DIR="@0@/res/target/basic"'.format(pixel_inspector_dir), language : 'cpp')
 add_project_arguments('-DOUTPUT_DIR="@0@/output"'.format(pixel_inspector_dir), language : 'cpp')
 
+all_backends = get_option('backends').contains('all')
+cpu_backend = all_backends or get_option('backends').contains('cpu')
+gl_backend = all_backends or get_option('backends').contains('gl')
+wg_backend = all_backends or get_option('backends').contains('wg')
+
+if not cpu_backend and not gl_backend and not wg_backend
+  error('At least one Pixel Inspector backend is required.')
+endif
+
 subdir('src')

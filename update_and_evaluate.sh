@@ -4,7 +4,7 @@ set -euo pipefail
 
 if [ "$#" -lt 2 ]; then
     echo "Usage: $0 <golden-ref> <test-ref> [test-options...]"
-    echo "Example: $0 v1.0.5 main --backend sw"
+    echo "Example: $0 v1.0.5 main --backend cpu"
     exit 1
 fi
 
@@ -23,7 +23,7 @@ bash ./build_and_run.sh "${TEST_OPTIONS[@]}"
 TEST_STATUS="$?"
 set -e
 
-# Report: print each backend tab (gl/wg/sw) to a separate PDF.
+# Report: print each backend tab to a separate PDF.
 REPORT_HTML="$(pwd)/output/reporter.html"
 if [ -f "$REPORT_HTML" ]; then
     CHROME=""

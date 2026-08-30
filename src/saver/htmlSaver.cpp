@@ -222,7 +222,7 @@ static constexpr auto Script = R"JS(
     themeToggle.textContent = dark ? 'Light' : 'Dark';
   });
   tabs.forEach((tab) => tab.addEventListener('click', () => selectTab(tab.dataset.tab)));
-  // Allow preselecting a tab via URL hash (e.g. reporter.html#sw) for per-backend printing.
+  // Allow preselecting a backend tab via the URL hash.
   const hashTab = decodeURIComponent(location.hash.slice(1));
   const initial = tabs.some((tab) => tab.dataset.tab === hashTab) ? hashTab : (tabs[0] && tabs[0].dataset.tab);
   if (tabs.length) selectTab(initial);

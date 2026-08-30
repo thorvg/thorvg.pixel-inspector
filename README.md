@@ -45,15 +45,33 @@ meson setup builddir
 meson compile -C builddir
 ```
 
+Build only the backend required by an isolated CI job:
+
+```sh
+meson setup build-cpu -Dbackends=cpu
+meson setup build-gl -Dbackends=gl
+meson setup build-wg -Dbackends=wg
+```
+
+An explicitly selected GL or WG backend makes its platform dependency required.
+The default `all` setting keeps the existing best-effort dependency detection.
+
+The helper scripts expose the same split through environment variables:
+
+```sh
+THORVG_ENGINES=cpu ./install_thorvg.sh main
+PIXEL_BACKENDS=cpu ./build_and_run.sh --backend=cpu
+```
+
 By default, target resources are read from `res/target` and generated files are
 written under `output`.
 
 ## Usage
 
 ```sh
-./builddir/src/tvg-pixel-inspector --backend=sw
-./builddir/src/tvg-pixel-inspector --backend="gl,wg,sw"
-./builddir/src/tvg-pixel-inspector --update-golden --backend="gl,wg,sw"
+./builddir/src/tvg-pixel-inspector --backend=cpu
+./builddir/src/tvg-pixel-inspector --backend="gl,wg,cpu"
+./builddir/src/tvg-pixel-inspector --update-golden --backend="gl,wg,cpu"
 ```
 
 Helper scripts are also available:
@@ -142,21 +160,21 @@ output/
     viewport.wg.golden.png
     viewport.wg.actual.png
     viewport.wg.diff.png
-    viewport.sw.golden.png
-    viewport.sw.actual.png
-    viewport.sw.diff.png
+    viewport.cpu.golden.png
+    viewport.cpu.actual.png
+    viewport.cpu.diff.png
     ...
   lottie/
     sample.gl.golden.png
     sample.gl.actual.png
     sample.gl.diff.png
-    sample.sw.golden.png
+    sample.cpu.golden.png
     ...
   svg/
     logo.gl.golden.png
     logo.gl.actual.png
     logo.gl.diff.png
-    logo.gl.sw.png
+    logo.cpu.golden.png
     ...
 ```
 
@@ -168,9 +186,9 @@ Generated image paths use each asset path relative to the resource directory:
 
 ```text
 res/target/lottie/sample.json
-  -> output/lottie/sample.sw.golden.png
-  -> output/lottie/sample.sw.actual.png
-  -> output/lottie/sample.sw.diff.png
+  -> output/lottie/sample.cpu.golden.png
+  -> output/lottie/sample.cpu.actual.png
+  -> output/lottie/sample.cpu.diff.png
 ```
 
 ## Resources

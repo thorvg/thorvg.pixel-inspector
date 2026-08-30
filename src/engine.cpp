@@ -77,6 +77,8 @@ struct TestEngine
     virtual const uint8_t* output(uint32_t w, uint32_t h) = 0;
 };
 
+#if defined(TVGTEST_CPU_SUPPORTED)
+
 struct TestSwEngine : TestEngine
 {
     TestSwEngine(uint32_t w = 100, uint32_t h = 100, ColorSpace cs = ColorSpace::ABGR8888S) :
@@ -131,6 +133,8 @@ struct TestSwEngine : TestEngine
 private:
     uint32_t* pixels = nullptr;
 };
+
+#endif
 
 #if defined(TVGTEST_SDL_GL_SUPPORTED)
 
@@ -624,7 +628,10 @@ private:
 
 static TestEngine* _engine(const char* type, uint32_t w, uint32_t h, ColorSpace cs)
 {
-    if (!type || std::strcmp(type, "sw") == 0) return new TestSwEngine(w, h, cs);
+    if (!type) return nullptr;
+#if defined(TVGTEST_CPU_SUPPORTED)
+    if (std::strcmp(type, "cpu") == 0) return new TestSwEngine(w, h, cs);
+#endif
 #if defined(TVGTEST_SDL_GL_SUPPORTED) || defined(TVGTEST_GL_SUPPORTED) || defined(TVGTEST_GLES_SUPPORTED)
     if (std::strcmp(type, "gl") == 0) return new TestGLEngine(w, h, cs);
 #endif
