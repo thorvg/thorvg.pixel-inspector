@@ -47,25 +47,6 @@ static std::filesystem::path _drawTestPath(const std::string& outputDir, const s
     return std::filesystem::path(outputDir) / "draw_test" / (std::string(name) + "." + backend + "." + role + ".png");
 }
 
-static void _removeBySuffix(const std::string& outputDir, const char* suffix)
-{
-    std::error_code error;
-    const auto root = std::filesystem::path(outputDir);
-    if (!std::filesystem::exists(root, error)) return;
-
-    for (const auto& entry : std::filesystem::recursive_directory_iterator(root, std::filesystem::directory_options::skip_permission_denied, error)) {
-        if (error) { error.clear(); continue; }
-        if (!entry.is_regular_file(error)) continue;
-
-        const auto filename = entry.path().filename().string();
-        const auto len = std::strlen(suffix);
-        if (filename.size() >= len && filename.compare(filename.size() - len, len, suffix) == 0) {
-            std::filesystem::remove(entry.path(), error);
-            if (error) error.clear();
-        }
-    }
-}
-
 static void _loadFonts()
 {
     auto fontDir = std::filesystem::path(RESOURCE_DIR) / "font";
@@ -237,9 +218,6 @@ bool Runner::run()
 
     if (config.updateGolden) {
         LOG("RUNNER", "Updating golden images...");
-        _removeBySuffix(config.outputDir, ".golden.png");
-        _removeBySuffix(config.outputDir, ".actual.png");
-        _removeBySuffix(config.outputDir, ".diff.png");
         std::error_code error;
         std::filesystem::remove(std::filesystem::path(config.outputDir) / "reporter.html", error);
         std::filesystem::remove(std::filesystem::path(config.outputDir) / "reporter.md", error);
@@ -250,8 +228,6 @@ bool Runner::run()
 
     LOG("RUNNER", "Starting tests...");
     std::error_code error;
-    _removeBySuffix(config.outputDir, ".actual.png");
-    _removeBySuffix(config.outputDir, ".diff.png");
     std::filesystem::remove(std::filesystem::path(config.outputDir) / "reporter.html", error);
     std::filesystem::remove(std::filesystem::path(config.outputDir) / "reporter.md", error);
 
