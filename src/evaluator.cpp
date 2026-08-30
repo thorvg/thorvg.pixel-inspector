@@ -75,12 +75,12 @@ Evaluator::~Evaluator()
     finish();
 }
 
-Evaluator::Evaluator(const TestConfig& config)
+Evaluator::Evaluator(const TestConfig& config, uint32_t expected)
 {
     result.config = config;
     result.metrics = metrics();
     for (const auto& backend : config.backends)
-        result.backends.push_back({backend});
+        result.backends.push_back({backend, {0, 0, expected}});
     worker = std::thread(&Evaluator::run, this);
 }
 
@@ -128,7 +128,6 @@ void Evaluator::run()
 
         // Error Cases: missing render
         if (!task.rendered) {
-            ++backendResult->summary.errors;
             backendResult->errors.push_back(task.relative);
             LOGERR("EVALUATOR", "Failed to render: %s", task.asset.c_str());
             continue;
@@ -136,7 +135,6 @@ void Evaluator::run()
 
         // Error Cases: missing comparison target
         if (!std::filesystem::exists(task.golden) || !std::filesystem::exists(task.actual)) {
-            ++backendResult->summary.errors;
             backendResult->errors.push_back(task.relative);
             LOGERR("EVALUATOR", "Missing comparison target: %s", task.asset.c_str());
             continue;
@@ -145,22 +143,18 @@ void Evaluator::run()
         // Compare and save diff
         auto imageDiff = evaluate(task.golden.c_str(), task.actual.c_str());
         if (!imageDiff.ok) {
-            ++backendResult->summary.errors;
             backendResult->errors.push_back(task.relative);
             LOGERR("EVALUATOR", "Failed to compare: %s", task.asset.c_str());
             continue;
         }
-        ++backendResult->summary.compared;
-
-        if (imageDiff.different) {
-            ++backendResult->summary.differences;
-        }
-
         if (!saveResult(task.diff.c_str())) {
-            ++backendResult->summary.errors;
             LOGERR("EVALUATOR", "Failed to create diff image: %s", task.asset.c_str());
             continue;
         }
+
+        --backendResult->summary.errors;
+        ++backendResult->summary.compared;
+        if (imageDiff.different) ++backendResult->summary.differences;
 
         LOG("EVALUATOR", "%s evaluator=%s %s", task.relative.c_str(), EvaluatorName, _metricLog(result.metrics, imageDiff.metricValues).c_str());
         backendResult->comparisons.push_back({task.relative, task.golden, task.actual, task.diff, std::move(imageDiff.metricValues), imageDiff.different});

@@ -233,7 +233,8 @@ bool Runner::run()
     std::filesystem::remove(std::filesystem::path(config.outputDir) / "reporter.html", error);
     std::filesystem::remove(std::filesystem::path(config.outputDir) / "reporter.md", error);
 
-    Evaluator evaluatorQueue(config);
+    auto expected = static_cast<uint32_t>(assets.size() + (config.drawTests ? tvgdraw::DrawTestRegistry::entries().size() : 0));
+    Evaluator evaluatorQueue(config, expected);
     for (const auto& backend : config.backends) saveBackendAndEval(backend, &evaluatorQueue);
     auto result = evaluatorQueue.sync();
     const auto reportSaved = saveReport(result);
