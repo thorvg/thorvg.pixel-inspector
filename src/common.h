@@ -57,6 +57,8 @@ struct TestConfig
     std::string outputDir = DEFAULT_OUTPUT_DIR;
     std::vector<std::string> backends;
     uint32_t maxWidth = DEFAULT_MAX_WIDTH;
+    uint32_t shardIndex = 0;
+    uint32_t shardCount = 1;
     Threshold threshold;
     bool updateGolden = false;
     bool drawTests = true;

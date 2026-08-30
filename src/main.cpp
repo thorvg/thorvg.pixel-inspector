@@ -116,6 +116,8 @@ static void _help(const char* name)
     std::printf("  --resource <dir>               resource directory (default: TARGET_RESOURCE_DIR)\n");
     std::printf("  --output <dir>                 output directory (default: OUTPUT_DIR)\n");
     std::printf("  --max-width <px>               PNG fit cell width (default: %u)\n", DEFAULT_MAX_WIDTH);
+    std::printf("  --shard-index <index>          zero-based asset shard index (default: 0)\n");
+    std::printf("  --shard-count <count>          total asset shard count (default: 1)\n");
     std::printf("  --max-channel-distance-threshold <value>  Max-channel distance threshold (default: %u)\n", DEFAULT_THRESHOLD_MAX_CHANNEL_DISTANCE);
     std::printf("  --diff-ratio-threshold <value>  Diff ratio threshold (default: %.3g)\n", DEFAULT_THRESHOLD_DIFF_RATIO);
     std::printf("  --skip-draw-tests              skip registered C++ draw tests\n");
@@ -151,6 +153,10 @@ static bool _parse(int argc, char** argv, TestConfig* config, bool* done)
         } else if (_next(argc, argv, &i, "--max-width", &value)) {
             if (!_uint32(value, &config->maxWidth)) return false;
             if (config->maxWidth == 0) return false;
+        } else if (_next(argc, argv, &i, "--shard-index", &value)) {
+            if (!_uint32(value, &config->shardIndex)) return false;
+        } else if (_next(argc, argv, &i, "--shard-count", &value)) {
+            if (!_uint32(value, &config->shardCount)) return false;
         } else if (_next(argc, argv, &i, "--max-channel-distance-threshold", &value) ||
                    _next(argc, argv, &i, "--max_channel_distance_threshold", &value)) {
             if (!_uint32(value, &config->threshold.maxChannelDistance)) return false;
@@ -170,6 +176,7 @@ static bool _parse(int argc, char** argv, TestConfig* config, bool* done)
         } else return false;
     }
 
+    if (config->shardCount == 0 || config->shardIndex >= config->shardCount) return false;
     if (config->backends.empty()) config->backends = supported;
     // Keep CPU last because SwCanvas::target() updates ThorVG's global ImageLoader color space.
     auto cpu = std::find(config->backends.begin(), config->backends.end(), "cpu");
