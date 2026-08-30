@@ -14,14 +14,20 @@ shift 2
 
 TEST_OPTIONS=("$@")
 
+TOTAL_START=$SECONDS
+GOLDEN_START=$SECONDS
 bash ./install_thorvg.sh "$GOLDEN_REF"
 bash ./build_and_run.sh "${TEST_OPTIONS[@]}" --update-golden
+echo "Golden elapsed: $((SECONDS - GOLDEN_START)) seconds"
 
+TEST_START=$SECONDS
 bash ./install_thorvg.sh "$TEST_REF"
 set +e
 bash ./build_and_run.sh "${TEST_OPTIONS[@]}"
 TEST_STATUS="$?"
 set -e
+echo "Test elapsed: $((SECONDS - TEST_START)) seconds"
+echo "Total elapsed: $((SECONDS - TOTAL_START)) seconds"
 
 # Report: print each backend tab to a separate PDF.
 REPORT_HTML="$(pwd)/output/reporter.html"
