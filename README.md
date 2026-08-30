@@ -102,11 +102,26 @@ compared against those golden images.
 | `--resource=<dir>` | Resource directory. |
 | `--output=<dir>` | Output directory. |
 | `--max-width=<px>` | PNG fit cell width. Images are scaled to fit this box while preserving aspect ratio. |
+| `--shard-index=<index>` | Zero-based shard index. Must be less than `--shard-count`. Default `0`. |
+| `--shard-count=<count>` | Total number of shards. Default `1`. |
 | `--max-channel-distance-threshold=<value>` | Max-channel distance threshold. A pixel counts as different when its RGBA Chebyshev distance exceeds this. Default `0`. |
 | `--diff-ratio-threshold=<value>` | Diff ratio threshold. An image is marked different when its diff ratio exceeds this. Default `0`. |
 | `--skip-draw-tests` | Skip registered C++ draw tests. |
 | `--update-golden` | Update golden images. |
 | `--help` | Print command line help. |
+
+### CI Sharding
+
+Use `--shard-index` and `--shard-count` to split tests across CI workers:
+
+```sh
+./builddir/src/tvg-pixel-inspector \
+  --shard-index=0 \
+  --shard-count=3
+```
+
+Assets and draw tests are assigned deterministically. Lottie JSON and SVG assets
+are sharded independently. Use the same shard options for golden and test runs.
 
 ### Evaluator
 

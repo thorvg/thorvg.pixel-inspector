@@ -20,8 +20,10 @@
  * SOFTWARE.
  */
 
+#include <algorithm>
 #include <cstring>
 #include <filesystem>
+#include <utility>
 
 #include <thorvg.h>
 
@@ -101,6 +103,18 @@ Runner::Runner(const TestConfig& config) : config(config)
         auto ext = entry.path().extension();
         if (entry.is_regular_file(error) && (ext == ".json" || ext == ".svg")) assets.push_back(entry.path().string());
     }
+    if (config.shardCount > 1) {
+        std::sort(assets.begin(), assets.end());
+        std::vector<std::string> shard;
+        shard.reserve((assets.size() + config.shardCount - 1) / config.shardCount);
+        size_t lottieIndex = 0;
+        size_t svgIndex = 0;
+        for (auto& asset : assets) {
+            auto& index = std::filesystem::path(asset).extension() == ".json" ? lottieIndex : svgIndex;
+            if (index++ % config.shardCount == config.shardIndex) shard.push_back(std::move(asset));
+        }
+        assets = std::move(shard);
+    }
 
     // LOG options
     LOG("RUNNER", "Target resource directory: %s", config.resourceTargetDir.c_str());
@@ -109,13 +123,22 @@ Runner::Runner(const TestConfig& config) : config(config)
     LOG("RUNNER", "Max-channel distance threshold: %u", config.threshold.maxChannelDistance);
     LOG("RUNNER", "Diff ratio threshold: %.6f", config.threshold.diffRatio);
     LOG("RUNNER", "Assets: %zu", assets.size());
-    LOG("RUNNER", "Draw tests: %zu", config.drawTests ? tvgdraw::DrawTestRegistry::entries().size() : 0);
 
     if (config.updateGolden) LOG("RUNNER", "Update golden mode enabled.");
 }
 
 bool Runner::run()
 {
+    auto drawTests = tvgdraw::DrawTestRegistry::entries();
+    if (config.shardCount > 1) {
+        std::sort(drawTests.begin(), drawTests.end(), [](const auto& a, const auto& b) { return std::strcmp(a.name, b.name) < 0; });
+        std::vector<tvgdraw::DrawTestEntry> shard;
+        shard.reserve((drawTests.size() + config.shardCount - 1) / config.shardCount);
+        for (size_t i = config.shardIndex; i < drawTests.size(); i += config.shardCount) shard.push_back(drawTests[i]);
+        drawTests = std::move(shard);
+    }
+    LOG("RUNNER", "Draw tests: %zu", config.drawTests ? drawTests.size() : 0);
+
     auto savePngAndEval = [this](const std::string& backend, TestCanvas* canvas, Evaluator* evaluatorQueue) {
         LOG("RUNNER", "Backend: %s", backend.c_str());
         PngSaver saver(config.maxWidth);
@@ -146,9 +169,8 @@ bool Runner::run()
         }
     };
 
-    auto saveDrawTestsAndEval = [this](const std::string& backend, TestCanvas* canvas, Evaluator* evaluatorQueue) {
+    auto saveDrawTestsAndEval = [this, &drawTests](const std::string& backend, TestCanvas* canvas, Evaluator* evaluatorQueue) {
         if (!config.drawTests) return;
-        const auto& drawTests = tvgdraw::DrawTestRegistry::entries();
         if (drawTests.empty()) return;
 
         LOG("RUNNER", "Draw test backend: %s", backend.c_str());
@@ -233,7 +255,7 @@ bool Runner::run()
     std::filesystem::remove(std::filesystem::path(config.outputDir) / "reporter.html", error);
     std::filesystem::remove(std::filesystem::path(config.outputDir) / "reporter.md", error);
 
-    auto expected = static_cast<uint32_t>(assets.size() + (config.drawTests ? tvgdraw::DrawTestRegistry::entries().size() : 0));
+    auto expected = static_cast<uint32_t>(assets.size() + (config.drawTests ? drawTests.size() : 0));
     Evaluator evaluatorQueue(config, expected);
     for (const auto& backend : config.backends) saveBackendAndEval(backend, &evaluatorQueue);
     auto result = evaluatorQueue.sync();
