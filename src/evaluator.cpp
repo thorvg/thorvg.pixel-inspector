@@ -34,6 +34,7 @@
 namespace
 {
 
+#if defined(TVGTEST_LOG_ENABLED)
 constexpr auto EvaluatorName = "pixel";
 
 std::string _metricLog(const std::vector<TestResult::Metric>& schema, const std::vector<float>& values)
@@ -45,6 +46,7 @@ std::string _metricLog(const std::vector<TestResult::Metric>& schema, const std:
     }
     return stream.str();
 }
+#endif
 
 struct PngImage
 {
@@ -160,11 +162,12 @@ void Evaluator::run()
         backendResult->comparisons.push_back({task.relative, task.golden, task.actual, task.diff, std::move(imageDiff.metricValues), imageDiff.different});
     }
 
-    // Log summary
+#if defined(TVGTEST_LOG_ENABLED)
     for (const auto& backendResult : result.backends) {
         LOG("EVALUATOR", "%s %s: compared=%u differences=%u errors=%u",
             EvaluatorName, backendResult.name.c_str(), backendResult.summary.compared, backendResult.summary.differences, backendResult.summary.errors);
     }
+#endif
 }
 
 const std::vector<TestResult::Metric>& Evaluator::metrics() const

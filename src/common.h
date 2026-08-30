@@ -36,7 +36,11 @@ constexpr auto LogBgColor = "\033[42m";
 constexpr auto GreyColor = "\033[90m";
 constexpr auto ResetColors = "\033[0m";
 
+#if defined(TVGTEST_LOG_ENABLED)
 #define LOG(tag, fmt, ...) fprintf(stdout, "%s[L]%s %s" tag "%s (%s %d): %s" fmt "\n", LogBgColor, ResetColors, LogColor, GreyColor, __FILE__, __LINE__, ResetColors, ##__VA_ARGS__)
+#else
+#define LOG(...) ((void)0)
+#endif
 #define LOGERR(tag, fmt, ...) fprintf(stderr, "%s[E]%s %s" tag "%s (%s %d): %s" fmt "\n", ErrorBgColor, ResetColors, ErrorColor, GreyColor, __FILE__, __LINE__, ResetColors, ##__VA_ARGS__)
 
 #define DEFAULT_RESOURCE_TARGET_DIR TARGET_RESOURCE_DIR

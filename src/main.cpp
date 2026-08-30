@@ -194,10 +194,14 @@ int main(int argc, char** argv)
         return 1;
     }
 
+#if defined(TVGTEST_LOG_ENABLED)
     const auto start = std::chrono::steady_clock::now();
+#endif
     const auto passed = Runner(config).run();
+#if defined(TVGTEST_LOG_ENABLED)
     const auto elapsed = std::chrono::duration<double>(std::chrono::steady_clock::now() - start).count();
     LOG("MAIN", "Elapsed: %.3f seconds", elapsed);
+#endif
 
     return passed ? 0 : 1;
 }
