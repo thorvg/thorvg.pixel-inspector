@@ -63,7 +63,7 @@ THORVG_ENGINES=cpu ./install_thorvg.sh main
 PIXEL_BACKENDS=cpu ./build_and_run.sh --backend=cpu
 ```
 
-By default, target resources are read from `res/target` and generated files are
+By default, target resources are read from `res/default` and generated files are
 written under `output`.
 
 ## Usage
@@ -200,7 +200,7 @@ CI can publish as-is.
 Generated image paths use each asset path relative to the resource directory:
 
 ```text
-res/target/lottie/sample.json
+res/default/lottie/sample.json
   -> output/lottie/sample.cpu.golden.png
   -> output/lottie/sample.cpu.actual.png
   -> output/lottie/sample.cpu.diff.png
@@ -208,10 +208,10 @@ res/target/lottie/sample.json
 
 ## Resources
 
-Default assets are stored in `res/target`:
+Default assets are stored in `res/default`:
 
-- `res/target/svg`: SVG resources
-- `res/target/lottie`: Lottie JSON resources
+- `res/default/svg`: SVG resources
+- `res/default/lottie`: Lottie JSON resources
 
 Use `--resource <dir>` to run another target resource directory.
 

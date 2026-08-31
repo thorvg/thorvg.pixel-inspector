@@ -10,8 +10,8 @@ if host_machine.system() == 'windows'
 endif
 
 add_project_arguments('-DRESOURCE_DIR="@0@/res"'.format(pixel_inspector_dir), language : 'cpp')
-add_project_arguments('-DTARGET_RESOURCE_DIR="@0@/res/target"'.format(pixel_inspector_dir), language : 'cpp')
-add_project_arguments('-DEXAMPLE_DIR="@0@/res/target/basic"'.format(pixel_inspector_dir), language : 'cpp')
+add_project_arguments('-DTARGET_RESOURCE_DIR="@0@/res/default"'.format(pixel_inspector_dir), language : 'cpp')
+add_project_arguments('-DEXAMPLE_DIR="@0@/res/default/basic"'.format(pixel_inspector_dir), language : 'cpp')
 add_project_arguments('-DOUTPUT_DIR="@0@/output"'.format(pixel_inspector_dir), language : 'cpp')
 
 all_backends = get_option('backends').contains('all')
