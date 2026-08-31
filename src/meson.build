@@ -77,11 +77,11 @@ endif
 
 
 subdir('saver')
-subdir('draw_test')
+subdir('example')
 
 pixel_inspector_dep += engine_backend_dep
 pixel_inspector_dep += saver_dep
-pixel_inspector_dep += draw_test_dep
+pixel_inspector_dep += example_dep
 
 pixel_inspector_source_file += [
     'common.h',

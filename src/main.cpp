@@ -120,7 +120,7 @@ static void _help(const char* name)
     std::printf("  --shard-count <count>          total asset shard count (default: 1)\n");
     std::printf("  --max-channel-distance-threshold <value>  Max-channel distance threshold (default: %u)\n", DEFAULT_THRESHOLD_MAX_CHANNEL_DISTANCE);
     std::printf("  --diff-ratio-threshold <value>  Diff ratio threshold (default: %.3g)\n", DEFAULT_THRESHOLD_DIFF_RATIO);
-    std::printf("  --skip-draw-tests              skip registered C++ draw tests\n");
+    std::printf("  --skip-examples                skip registered C++ example tests\n");
     std::printf("  --update-golden               update golden images\n");
     std::printf("  --help                         print this message\n");
 }
@@ -167,8 +167,8 @@ static bool _parse(int argc, char** argv, TestConfig* config, bool* done)
             if (config->threshold.diffRatio > 1.0f) return false;
         } else if (_equal(argv[i], "--update-golden")) {
             config->updateGolden = true;
-        } else if (_equal(argv[i], "--skip-draw-tests")) {
-            config->drawTests = false;
+        } else if (_equal(argv[i], "--skip-examples")) {
+            config->examples = false;
         } else if (_equal(argv[i], "--help") || _equal(argv[i], "-h")) {
             _help(argv[0]);
             *done = true;

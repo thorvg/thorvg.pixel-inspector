@@ -31,7 +31,7 @@
 #include "csvSaver.h"
 #include "engine.h"
 #include "evaluator.h"
-#include "drawTest.h"
+#include "exampleTest.h"
 #include "htmlSaver.h"
 #include "mdSaver.h"
 #include "pngSaver.h"
@@ -43,14 +43,14 @@ static std::filesystem::path _path(const std::string& resourceTargetDir, const s
     return std::filesystem::path(outputDir) / relative;
 }
 
-static std::filesystem::path _drawTestPath(const std::string& outputDir, const std::string& backend, const char* name, const char* role)
+static std::filesystem::path _examplePath(const std::string& outputDir, const std::string& backend, const char* name, const char* role)
 {
-    return std::filesystem::path(outputDir) / "draw_test" / (std::string(name) + "." + backend + "." + role + ".png");
+    return std::filesystem::path(outputDir) / "example" / (std::string(name) + "." + backend + "." + role + ".png");
 }
 
 static void _loadFonts()
 {
-    auto fontDir = std::filesystem::path(RESOURCE_DIR) / "font";
+    auto fontDir = std::filesystem::path(EXAMPLE_DIR) / "font";
     std::error_code error;
     for (const auto& entry : std::filesystem::directory_iterator(fontDir, error)) {
         auto ext = entry.path().extension();
@@ -59,12 +59,6 @@ static void _loadFonts()
             LOGERR("RUNNER", "Failed to load font: %s", entry.path().string().c_str());
         }
     }
-}
-
-static bool _saveDrawTest(TestCanvas* canvas, tvgdraw::DrawTest* drawTest, const char* filename)
-{
-    if (!canvas->resize(drawTest->width, drawTest->height)) return false;
-    return drawTest->draw(canvas->ptr()) && PngSaver(drawTest->width).save(canvas, filename);
 }
 
 static bool _passed(const TestResult& result)
@@ -110,15 +104,15 @@ Runner::Runner(const TestConfig& config) : config(config)
 
 bool Runner::run()
 {
-    auto drawTests = tvgdraw::DrawTestRegistry::entries();
+    auto examples = tvgexample::ExampleTestRegistry::entries();
     if (config.shardCount > 1) {
-        std::sort(drawTests.begin(), drawTests.end(), [](const auto& a, const auto& b) { return std::strcmp(a.name, b.name) < 0; });
-        std::vector<tvgdraw::DrawTestEntry> shard;
-        shard.reserve((drawTests.size() + config.shardCount - 1) / config.shardCount);
-        for (size_t i = config.shardIndex; i < drawTests.size(); i += config.shardCount) shard.push_back(drawTests[i]);
-        drawTests = std::move(shard);
+        std::sort(examples.begin(), examples.end(), [](const auto& a, const auto& b) { return std::strcmp(a.name, b.name) < 0; });
+        std::vector<tvgexample::ExampleTestEntry> shard;
+        shard.reserve((examples.size() + config.shardCount - 1) / config.shardCount);
+        for (size_t i = config.shardIndex; i < examples.size(); i += config.shardCount) shard.push_back(examples[i]);
+        examples = std::move(shard);
     }
-    LOG("RUNNER", "Draw tests: %zu", config.drawTests ? drawTests.size() : 0);
+    LOG("RUNNER", "Example tests: %zu", config.examples ? examples.size() : 0);
 
     auto savePngAndEval = [this](const std::string& backend, TestCanvas* canvas, Evaluator* evaluatorQueue) {
         LOG("RUNNER", "Backend: %s", backend.c_str());
@@ -154,29 +148,26 @@ bool Runner::run()
         }
     };
 
-    auto saveDrawTestsAndEval = [this, &drawTests](const std::string& backend, TestCanvas* canvas, Evaluator* evaluatorQueue) {
-        if (!config.drawTests) return;
-        if (drawTests.empty()) return;
+    auto saveExamplesAndEval = [this, &examples](const std::string& backend, TestCanvas* canvas, Evaluator* evaluatorQueue) {
+        if (!config.examples) return;
+        if (examples.empty()) return;
 
-        LOG("RUNNER", "Draw test backend: %s", backend.c_str());
-        for (const auto& entry : drawTests) {
-            auto drawTest = entry.factory();
-            const auto target = _drawTestPath(config.outputDir, backend, entry.name, evaluatorQueue ? "actual" : "golden");
+        LOG("RUNNER", "Example test backend: %s", backend.c_str());
+        for (const auto& entry : examples) {
+            const auto target = _examplePath(config.outputDir, backend, entry.name, evaluatorQueue ? "actual" : "golden");
             auto rendered = false;
-            if (drawTest) {
-                if (canvas && canvas->recreate()) {
-                    rendered = _saveDrawTest(canvas, drawTest.get(), target.string().c_str());
-                } else {
-                    LOGERR("RUNNER", "Failed to recreate draw test canvas: %s", backend.c_str());
-                }
+            if (canvas && canvas->recreate()) {
+                rendered = PngSaver(entry.width).save(canvas, entry, target.string().c_str());
+            } else {
+                LOGERR("RUNNER", "Failed to recreate example test canvas: %s", backend.c_str());
             }
-            if (!rendered) LOGERR("RUNNER", "Failed draw test: %s", entry.name);
+            if (!rendered) LOGERR("RUNNER", "Failed example test: %s", entry.name);
 
             if (!evaluatorQueue) continue;
 
-            const auto golden = _drawTestPath(config.outputDir, backend, entry.name, "golden");
-            const auto diff = _drawTestPath(config.outputDir, backend, entry.name, "diff");
-            const auto relative = (std::filesystem::path("draw_test") / entry.name).string();
+            const auto golden = _examplePath(config.outputDir, backend, entry.name, "golden");
+            const auto diff = _examplePath(config.outputDir, backend, entry.name, "diff");
+            const auto relative = (std::filesystem::path("example") / entry.name).string();
             evaluatorQueue->push({
                     backend,
                     relative,
@@ -189,7 +180,7 @@ bool Runner::run()
         }
     };
 
-    auto saveBackendAndEval = [&savePngAndEval, &saveDrawTestsAndEval](const std::string& backend, Evaluator* evaluatorQueue) {
+    auto saveBackendAndEval = [&savePngAndEval, &saveExamplesAndEval](const std::string& backend, Evaluator* evaluatorQueue) {
         auto colorSpace = backend == "wg" ? tvg::ColorSpace::ABGR8888 : tvg::ColorSpace::ABGR8888S;
         TestCanvas canvas(backend.c_str(), colorSpace);
         if (!canvas.ptr()) {
@@ -198,7 +189,7 @@ bool Runner::run()
         }
         _loadFonts();
         savePngAndEval(backend, &canvas, evaluatorQueue);
-        saveDrawTestsAndEval(backend, &canvas, evaluatorQueue);
+        saveExamplesAndEval(backend, &canvas, evaluatorQueue);
     };
 
     auto saveReport = [this](const TestResult& result) {
@@ -245,7 +236,7 @@ bool Runner::run()
     std::filesystem::remove(std::filesystem::path(config.outputDir) / "reporter.md", error);
     std::filesystem::remove(std::filesystem::path(config.outputDir) / "reporter.csv", error);
 
-    auto expected = static_cast<uint32_t>(assets.size() + (config.drawTests ? drawTests.size() : 0));
+    auto expected = static_cast<uint32_t>(assets.size() + (config.examples ? examples.size() : 0));
     Evaluator evaluatorQueue(config, expected);
     for (const auto& backend : config.backends) saveBackendAndEval(backend, &evaluatorQueue);
     auto result = evaluatorQueue.sync();

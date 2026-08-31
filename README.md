@@ -107,7 +107,7 @@ compared against those golden images.
 | `--shard-count=<count>` | Total number of shards. Default `1`. |
 | `--max-channel-distance-threshold=<value>` | Max-channel distance threshold. A pixel counts as different when its RGBA Chebyshev distance exceeds this. Default `0`. |
 | `--diff-ratio-threshold=<value>` | Diff ratio threshold. An image is marked different when its diff ratio exceeds this. Default `0`. |
-| `--skip-draw-tests` | Skip registered C++ draw tests. |
+| `--skip-examples` | Skip registered C++ example tests. |
 | `--update-golden` | Update golden images. |
 | `--help` | Print command line help. |
 
@@ -121,7 +121,7 @@ Use `--shard-index` and `--shard-count` to split tests across CI workers:
   --shard-count=3
 ```
 
-Assets and draw tests are assigned deterministically. Lottie JSON and SVG assets
+Assets and example tests are assigned deterministically. Lottie JSON and SVG assets
 are sharded independently. Use the same shard options for golden and test runs.
 
 ### Evaluator
@@ -139,28 +139,18 @@ are sharded independently. Use the same shard options for golden and test runs.
 - The report also lists `Diff Pixel Count`, the number of differing pixels in
   each comparison.
 
-### Draw Tests
+### Example Tests
 
-C++ draw tests can be registered with `DRAW_TEST` under `src/draw_test`:
+Copy a ThorVG example unchanged into `src/example/src`, then add it to
+`src/example/src/meson.build`:
 
-```cpp
-DRAW_TEST(name, width, height, canvas)
-{
-    // Add ThorVG paints to canvas.
-    return true;
-}
+```meson
+# [<test name>, <copied source>, <width>, <height>, <duration in seconds>]
+['transform', 'Transform.cpp', '960', '960', '2.0f'],
 ```
 
-For each backend, registered draw tests are rendered after that backend's asset
-tests. In update mode, their golden images are updated after that backend's
-asset golden images are updated.
-
-Add new draw test `.cpp` files to `src/draw_test/meson.build` so they are linked
-into the inspector and registered at startup.
-
-Current draw tests cover shapes, paths, gradients, gradient strokes, fill rules,
-fill spread modes, scenes, opacity, trim paths, text layout, raw picture tiling,
-SVG pictures, and clipping.
+Use `0.0f` for a static example. A positive duration produces evenly sampled
+frames in a grid. Meson generates and registers the adapter automatically.
 
 ## Output
 
@@ -168,7 +158,7 @@ SVG pictures, and clipping.
 output/
   reporter.html
   reporter.md
-  draw_test/
+  example/
     viewport.gl.golden.png
     viewport.gl.actual.png
     viewport.gl.diff.png
