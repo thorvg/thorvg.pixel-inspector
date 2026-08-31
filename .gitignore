@@ -13,4 +13,5 @@ doc
 temp
 compile_commands.json
 output/*
-res/target/thorvg.test-suite/
+res/default/thorvg.test-suite/
+.worktree
