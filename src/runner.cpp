@@ -28,6 +28,7 @@
 #include <thorvg.h>
 
 #include "runner.h"
+#include "csvSaver.h"
 #include "engine.h"
 #include "evaluator.h"
 #include "drawTest.h"
@@ -216,7 +217,15 @@ bool Runner::run()
         } else {
             LOGERR("RUNNER", "Failed to create summary: %s", config.outputDir.c_str());
         }
-        return htmlSaved && mdSaved;
+
+        const auto csvPath = std::filesystem::path(config.outputDir) / "reporter.csv";
+        const auto csvSaved = CsvSaver().save(result, config.outputDir);
+        if (csvSaved) {
+            LOG("RUNNER", "Summary data: %s", csvPath.string().c_str());
+        } else {
+            LOGERR("RUNNER", "Failed to create summary data: %s", config.outputDir.c_str());
+        }
+        return htmlSaved && mdSaved && csvSaved;
     };
 
     if (config.updateGolden) {
@@ -224,6 +233,7 @@ bool Runner::run()
         std::error_code error;
         std::filesystem::remove(std::filesystem::path(config.outputDir) / "reporter.html", error);
         std::filesystem::remove(std::filesystem::path(config.outputDir) / "reporter.md", error);
+        std::filesystem::remove(std::filesystem::path(config.outputDir) / "reporter.csv", error);
         for (const auto& backend : config.backends) saveBackendAndEval(backend, nullptr);
         LOG("RUNNER", "Golden images updated.");
         return true;
@@ -233,6 +243,7 @@ bool Runner::run()
     std::error_code error;
     std::filesystem::remove(std::filesystem::path(config.outputDir) / "reporter.html", error);
     std::filesystem::remove(std::filesystem::path(config.outputDir) / "reporter.md", error);
+    std::filesystem::remove(std::filesystem::path(config.outputDir) / "reporter.csv", error);
 
     auto expected = static_cast<uint32_t>(assets.size() + (config.drawTests ? drawTests.size() : 0));
     Evaluator evaluatorQueue(config, expected);

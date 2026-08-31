@@ -1,4 +1,6 @@
 source_file = [
+   'csvSaver.h',
+   'csvSaver.cpp',
    'htmlSaver.h',
    'htmlSaver.cpp',
    'lodepng.h',
