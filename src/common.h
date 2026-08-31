@@ -65,7 +65,7 @@ struct TestConfig
     uint32_t shardCount = 1;
     Threshold threshold;
     bool updateGolden = false;
-    bool drawTests = true;
+    bool examples = true;
 };
 
 struct TestResult

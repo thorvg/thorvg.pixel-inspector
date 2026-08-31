@@ -20,35 +20,22 @@
  * SOFTWARE.
  */
 
-#ifndef _TVG_PIXEL_INSPECTOR_PNG_SAVER_H_
-#define _TVG_PIXEL_INSPECTOR_PNG_SAVER_H_
-
-#include <cstdint>
-
-namespace tvg
-{
-struct Animation;
-struct Picture;
-}
+#include "src/Example.h"
 
 namespace tvgexample
 {
-struct ExampleTestEntry;
+namespace source
+{
+namespace @NAMESPACE@
+{
+#include "src/@SOURCE@"
+}
+}  // namespace source
+}  // namespace tvgexample
+
+static std::unique_ptr<tvgexam::Example> _make()
+{
+    return std::make_unique<tvgexample::source::@NAMESPACE@::UserExample>();
 }
 
-struct TestCanvas;
-
-struct PngSaver
-{
-    explicit PngSaver(uint32_t maxWidth) : maxWidth(maxWidth) {}
-
-    bool save(TestCanvas* canvas, const char* asset, const char* filename);
-    bool save(TestCanvas* canvas, tvg::Picture* picture, const char* filename);
-    bool save(TestCanvas* canvas, const char* filename);
-    bool save(TestCanvas* canvas, tvg::Animation* animation, const char* filename);
-    bool save(TestCanvas* canvas, const tvgexample::ExampleTestEntry& entry, const char* filename);
-
-    const uint32_t maxWidth;
-};
-
-#endif
+static tvgexample::ExampleTestRegistrar _register("@NAME@", @WIDTH@, @HEIGHT@, @DURATION@, _make);

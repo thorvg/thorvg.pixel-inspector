@@ -31,6 +31,7 @@
 #include <vector>
 
 #include "common.h"
+#include "exampleTest.h"
 #include "engine.h"
 #include "lodepng.h"
 #include "pngSaver.h"
@@ -89,6 +90,18 @@ bool _resize(TestCanvas* canvas, Picture* picture, Size maxSize)
 
     if (picture->size(size.w, size.h) != Result::Success) return false;
     return canvas->resize(size.w, size.h);
+}
+
+void _copyFrame(std::vector<uint8_t>& dst, uint32_t dstW, Size cell, const uint8_t* src, Size size, uint32_t index)
+{
+    const auto columns = dstW / cell.w;
+    const auto col = index % columns, row = index / columns;
+    const auto dx = col * cell.w + (cell.w - size.w) / 2;
+    const auto dy = row * cell.h + (cell.h - size.h) / 2;
+    const auto srcStride = size.w * 4, dstStride = dstW * 4;
+    for (uint32_t y = 0; y < size.h; ++y) {
+        std::memcpy(dst.data() + (dy + y) * dstStride + dx * 4, src + y * srcStride, srcStride);
+    }
 }
 
 }
@@ -155,6 +168,58 @@ bool PngSaver::save(TestCanvas* canvas, const char* filename)
     return _encode(filename, canvas->buffer(), canvas->width, canvas->height, LCT_RGBA);
 }
 
+bool PngSaver::save(TestCanvas* canvas, const tvgexample::ExampleTestEntry& entry, const char* filename)
+{
+    auto example = entry.factory();
+    if (!example) return false;
+
+    if (!canvas->resize(entry.width, entry.height)) return false;
+    if (!example->content(canvas->ptr(), entry.width, entry.height)) {
+        canvas->clear();
+        return false;
+    }
+
+    if (entry.durationInSec <= 0.0f) {
+        auto saved = save(canvas, filename);
+        auto cleared = canvas->clear();
+        return saved && cleared;
+    }
+
+    // Some examples require an initial sync before their viewport or paints can be updated.
+    if (!canvas->render()) {
+        canvas->clear();
+        return false;
+    }
+
+    constexpr auto columns = 2u;
+    constexpr auto rows = tvgexample::ExampleTestEntry::FrameCount / columns;
+    const auto outputW = entry.width * columns;
+    const auto outputH = entry.height * rows;
+    const auto size = Size{entry.width, entry.height};
+    std::vector<uint8_t> buffer(static_cast<size_t>(outputW) * outputH * 4, 0);
+
+    for (uint32_t i = 0; i < tvgexample::ExampleTestEntry::FrameCount; ++i) {
+        example->elapsed = entry.elapsed(i);
+        example->update(canvas->ptr(), example->elapsed);
+        if (!canvas->render()) {
+            canvas->clear();
+            return false;
+        }
+
+        const auto src = canvas->buffer();
+        if (!src) {
+            canvas->clear();
+            return false;
+        }
+
+        _copyFrame(buffer, outputW, size, src, size, i);
+    }
+
+    auto saved = _encode(filename, buffer.data(), outputW, outputH, LCT_RGBA);
+    auto cleared = canvas->clear();
+    return saved && cleared;
+}
+
 bool PngSaver::save(TestCanvas* canvas, Animation* animation, const char* filename)
 {
     const auto picture = animation->picture();
@@ -180,14 +245,7 @@ bool PngSaver::save(TestCanvas* canvas, Animation* animation, const char* filena
             return false;
         }
 
-        // Copy
-        const auto col = i % grid, row = i / grid;
-        const auto dx = col * maxWidth + (maxWidth - size.w) / 2, dy = row * maxWidth + (maxWidth - size.h) / 2;
-        const auto sx = dx * 4, sy = dy;
-        const auto srcStride = size.w * 4, dstStride = output * 4;
-        for (uint32_t y = 0; y < size.h; ++y) {
-            std::memcpy(buffer.data() + (sy + y) * dstStride + sx, src + y * srcStride, srcStride);
-        }
+        _copyFrame(buffer, output, {maxWidth, maxWidth}, src, size, i);
     }
 
     if (canvas->ptr()->remove(picture) != Result::Success) return false;
