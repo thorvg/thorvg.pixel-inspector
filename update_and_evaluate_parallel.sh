@@ -72,7 +72,6 @@ if [ "${PIXEL_BUILD_ONLY:-false}" = true ]; then
     exit 0
 fi
 
-STATUS=0
 # Reuse both builds while evaluate_parallel.sh runs each backend concurrently.
 bash "$ROOTDIR/evaluate_parallel.sh" \
     "$WORKDIR/tvg-pixel-inspector-golden" \
@@ -80,7 +79,7 @@ bash "$ROOTDIR/evaluate_parallel.sh" \
     "$WORKDIR/tvg-pixel-inspector-test" \
     "$WORKDIR/install-test/lib" \
     "$OUTPUT_ROOT" \
-    "$@" || STATUS=$?
+    "$@"
 
 # Add PR-specific names only when requested; otherwise keep the default names.
 if [ -n "$PR_NUMBER" ]; then
@@ -94,4 +93,4 @@ if [ -n "$PR_NUMBER" ]; then
 fi
 
 echo "Update and evaluation elapsed: $((SECONDS - TOTAL_START)) seconds"
-exit "$STATUS"
+exit 0

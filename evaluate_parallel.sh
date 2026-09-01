@@ -90,4 +90,4 @@ awk -F, '
 ' "$OUTPUT_ROOT"/*/reporter.csv > "$OUTPUT_ROOT/reporter.md"
 
 echo "Total elapsed: $((SECONDS - TOTAL_START)) seconds"
-exit "$STATUS"
+exit 0

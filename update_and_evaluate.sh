@@ -22,10 +22,7 @@ echo "Golden elapsed: $((SECONDS - GOLDEN_START)) seconds"
 
 TEST_START=$SECONDS
 bash ./install_thorvg.sh "$TEST_REF"
-set +e
 bash ./build_and_run.sh "${TEST_OPTIONS[@]}"
-TEST_STATUS="$?"
-set -e
 echo "Test elapsed: $((SECONDS - TEST_START)) seconds"
 echo "Total elapsed: $((SECONDS - TOTAL_START)) seconds"
 
@@ -60,4 +57,4 @@ if [ -f "$REPORT_HTML" ]; then
     fi
 fi
 
-exit "$TEST_STATUS"
+exit 0

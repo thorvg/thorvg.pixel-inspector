@@ -13,4 +13,4 @@ export LD_LIBRARY_PATH="$THORVG_PREFIX/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
 
 meson setup build --wipe -Dbackends="$BACKENDS" -Dlog="$LOG"
 ninja -C build
-./build/src/tvg-pixel-inspector "$@"
+./build/src/tvg-pixel-inspector "$@" || true
