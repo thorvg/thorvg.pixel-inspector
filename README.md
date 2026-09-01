@@ -95,6 +95,18 @@ all arguments to the executable.
 ThorVG and update the golden images. The second ref is then installed and
 compared against those golden images.
 
+### Compliance
+
+Run all compliance resources against two ThorVG refs:
+
+```sh
+./compliance.sh --unzip v1.1.1 main
+./compliance.sh main main
+```
+
+Compliance tests resources under `res/compliance` using the CPU backend. Use
+`--unzip` to extract ZIP assets before testing.
+
 ### Options
 
 | Option | Description |

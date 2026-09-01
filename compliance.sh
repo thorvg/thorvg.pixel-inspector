@@ -3,76 +3,87 @@
 set -euo pipefail
 
 ROOTDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-THORVG_PREFIX="$ROOTDIR/temp/thorvg-install"
-RESOURCE_DIR="$ROOTDIR/res/compliance/godot"
-BUILD_DIR="$ROOTDIR/build-compliance"
-OUTPUT_DIR="$ROOTDIR/output/compliance/godot"
+RESOURCE_DIR="$ROOTDIR/res/compliance"
+OUTPUT_DIR="$ROOTDIR/output/compliance"
+PIXEL_LOG="${PIXEL_LOG:-false}"
 UNZIP=false
+REFS=()
 
 usage()
 {
-    echo "Usage: $0 [--unzip]"
-    echo "  --unzip  Extract the three Godot SVG compliance archives before testing."
+    echo "Usage: $0 [--unzip] <golden-ref> <test-ref>"
+    echo "  --unzip  Extract every archive under res/compliance before testing."
+    echo "Example: $0 --unzip v1.1.1 main"
 }
 
-for option in "$@"; do
-    case "$option" in
+# Parse options and collect the two ThorVG refs.
+for argument in "$@"; do
+    case "$argument" in
         --unzip) UNZIP=true ;;
         --help|-h)
             usage
             exit 0
             ;;
-        *)
+        --*)
+            echo "Unknown option: $argument" >&2
             usage >&2
             exit 1
             ;;
+        *) REFS+=("$argument") ;;
     esac
 done
 
+if [ "${#REFS[@]}" -ne 2 ]; then
+    usage >&2
+    exit 1
+fi
+
+GOLDEN_REF="${REFS[0]}"
+TEST_REF="${REFS[1]}"
+
+# Extract all compliance ZIP archives in place when requested.
 if [ "$UNZIP" = true ]; then
     command -v unzip >/dev/null 2>&1 || {
         echo "unzip is required to extract compliance resources." >&2
         exit 1
     }
 
-    archives=(
-        "ThorvgValidFiles.zip"
-        "ThorvgNotValidFiles.zip"
-        "AA_5.svg.zip"
-    )
-    for archive in "${archives[@]}"; do
-        archive_path="$RESOURCE_DIR/$archive"
-        if [ ! -f "$archive_path" ]; then
-            echo "Missing compliance archive: $archive_path" >&2
-            exit 1
-        fi
-        unzip -oq "$archive_path" -d "$RESOURCE_DIR"
-    done
+    ARCHIVE_COUNT=0
+    while IFS= read -r -d '' archive; do
+        unzip -oq "$archive" -d "$(dirname "$archive")"
+        ARCHIVE_COUNT=$((ARCHIVE_COUNT + 1))
+    done < <(find "$RESOURCE_DIR" -type f -name '*.zip' -print0)
+    echo "Extracted $ARCHIVE_COUNT compliance archives."
 fi
 
-SVG_COUNT="$(find "$RESOURCE_DIR" -type f -name '*.svg' | wc -l | tr -d ' ')"
-if [ "$SVG_COUNT" -eq 0 ]; then
-    echo "No extracted SVG compliance resources found." >&2
-    echo "Run $0 --unzip first." >&2
+# Count all supported assets under the compliance resource directory.
+ASSET_COUNT="$(find "$RESOURCE_DIR" -type f \( -name '*.svg' -o -name '*.json' \) | wc -l | tr -d ' ')"
+if [ "$ASSET_COUNT" -eq 0 ]; then
+    echo "No SVG or Lottie compliance resources found under $RESOURCE_DIR." >&2
+    echo "Run $0 --unzip if the resources are archived." >&2
     exit 1
 fi
 
-echo "Compliance target: godot ($SVG_COUNT SVG files)"
+echo "Compliance resources: $ASSET_COUNT files"
 
-export PKG_CONFIG_PATH="$THORVG_PREFIX/lib/pkgconfig${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}"
-export DYLD_LIBRARY_PATH="$THORVG_PREFIX/lib${DYLD_LIBRARY_PATH:+:$DYLD_LIBRARY_PATH}"
-export LD_LIBRARY_PATH="$THORVG_PREFIX/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+# Run the comparison from the project root.
+cd "$ROOTDIR"
+if [ "${PIXEL_SKIP_BUILD:-false}" = true ]; then
+    UPDATE_ARGS=("$GOLDEN_REF" "$TEST_REF")
+    if [ -n "${PIXEL_PR_NUMBER:-}" ]; then
+        UPDATE_ARGS+=("$PIXEL_PR_NUMBER")
+    fi
 
-meson setup "$BUILD_DIR" --wipe -Dbackends=cpu
-ninja -C "$BUILD_DIR"
-
-TEST_BINARY="$BUILD_DIR/src/tvg-pixel-inspector"
-TEST_OPTIONS=(
-    --backend cpu
-    --resource "$RESOURCE_DIR"
-    --output "$OUTPUT_DIR"
-    --skip-examples
-)
-
-"$TEST_BINARY" "${TEST_OPTIONS[@]}" --update-golden
-"$TEST_BINARY" "${TEST_OPTIONS[@]}"
+    PIXEL_PARALLEL_OUTPUT="${PIXEL_PARALLEL_OUTPUT:-$ROOTDIR/output/compliance}" \
+    PIXEL_BACKENDS=cpu PIXEL_LOG="$PIXEL_LOG" PIXEL_SKIP_BUILD=true \
+        bash ./update_and_evaluate_parallel.sh "${UPDATE_ARGS[@]}" \
+        --resource "$RESOURCE_DIR" \
+        --skip-examples
+else
+    THORVG_ENGINES=cpu PIXEL_BACKENDS=cpu PIXEL_LOG="$PIXEL_LOG" \
+        bash ./update_and_evaluate.sh "$GOLDEN_REF" "$TEST_REF" \
+        --backend cpu \
+        --resource "$RESOURCE_DIR" \
+        --output "$OUTPUT_DIR/cpu" \
+        --skip-examples
+fi

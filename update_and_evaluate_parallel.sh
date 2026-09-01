@@ -86,17 +86,11 @@ bash "$ROOTDIR/evaluate_parallel.sh" \
 if [ -n "$PR_NUMBER" ]; then
     for backend in "${BACKENDS[@]}"; do
         report_dir="$OUTPUT_ROOT/$backend"
-        for extension in html md; do
-            report="$report_dir/reporter.$extension"
-            if [ -f "$report" ]; then
-                mv "$report" "$report_dir/reporter.PR-$PR_NUMBER.$extension"
-            fi
-        done
+        report="$report_dir/reporter.html"
+        if [ -f "$report" ]; then
+            mv "$report" "$report_dir/reporter.PR-$PR_NUMBER.html"
+        fi
     done
-
-    if [ -f "$OUTPUT_ROOT/reporter.md" ]; then
-        cp "$OUTPUT_ROOT/reporter.md" "$OUTPUT_ROOT/reporter.PR-$PR_NUMBER.md"
-    fi
 fi
 
 echo "Update and evaluation elapsed: $((SECONDS - TOTAL_START)) seconds"
