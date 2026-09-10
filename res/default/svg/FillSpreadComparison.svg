@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="544" viewBox="0 0 1600 544">
+  <defs>
+    <radialGradient id="transformedFill" gradientUnits="userSpaceOnUse"
+                    cx="256" cy="256" r="2048" fx="256" fy="256" fr="0"
+                    gradientTransform="matrix(0.0625 0 0 0.0625 240 240)"
+                    spreadMethod="repeat">
+      <stop offset="0" stop-color="#7f27ff"/>
+      <stop offset="0.33" stop-color="#9f70fd"/>
+      <stop offset="0.66" stop-color="#fdbf60"/>
+      <stop offset="1" stop-color="#ff8911"/>
+    </radialGradient>
+    <radialGradient id="shapeFill" gradientUnits="userSpaceOnUse"
+                    cx="4096" cy="4096" r="2048" fx="4096" fy="4096" fr="0"
+                    spreadMethod="repeat">
+      <stop offset="0" stop-color="#7f27ff"/>
+      <stop offset="0.33" stop-color="#9f70fd"/>
+      <stop offset="0.66" stop-color="#fdbf60"/>
+      <stop offset="1" stop-color="#ff8911"/>
+    </radialGradient>
+    <radialGradient id="directFill" gradientUnits="userSpaceOnUse"
+                    cx="256" cy="256" r="128" fx="256" fy="256" fr="0"
+                    spreadMethod="repeat">
+      <stop offset="0" stop-color="#7f27ff"/>
+      <stop offset="0.33" stop-color="#9f70fd"/>
+      <stop offset="0.66" stop-color="#fdbf60"/>
+      <stop offset="1" stop-color="#ff8911"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="1600" height="544" fill="#202020"/>
+
+  <!-- Only the fill coordinate space is scaled. -->
+  <rect width="512" height="512" transform="translate(16 16)" fill="url(#transformedFill)"/>
+
+  <!-- The shape transform scales both the geometry and the fill. -->
+  <rect width="8192" height="8192" transform="matrix(0.0625 0 0 0.0625 544 16)" fill="url(#shapeFill)"/>
+
+  <!-- Reference uses the final dimensions without scaling. -->
+  <rect width="512" height="512" transform="translate(1072 16)" fill="url(#directFill)"/>
+</svg>
