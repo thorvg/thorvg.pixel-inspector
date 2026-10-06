@@ -102,10 +102,13 @@ Run all compliance resources against two ThorVG refs:
 ```sh
 ./compliance.sh --unzip v1.1.1 main
 ./compliance.sh main main
+./compliance.sh --type svg --unzip v1.1.1 main
+./compliance.sh --type webp v1.1.1 main
 ```
 
 Compliance tests resources under `res/compliance` using the CPU backend. Use
-`--unzip` to extract ZIP assets before testing.
+`--type all|svg|webp` to select a set (default: `all`), and `--unzip` to extract
+ZIP assets before testing.
 
 ### Options
 

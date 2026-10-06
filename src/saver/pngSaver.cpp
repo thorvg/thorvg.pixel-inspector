@@ -110,7 +110,7 @@ bool PngSaver::save(TestCanvas* canvas, const char* asset, const char* filename)
 {
     bool saved = false;
     const auto ext = std::filesystem::path(asset).extension();
-    if (ext == ".svg") {
+    if (ext == ".svg" || ext == ".webp") {
         const auto picture = Picture::gen();
 
         if (picture->load(asset) != Result::Success) {
