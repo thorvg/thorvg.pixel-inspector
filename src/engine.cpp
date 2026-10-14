@@ -20,6 +20,7 @@
  * SOFTWARE.
  */
 
+#include <algorithm>
 #include <thread>
 #include <chrono>
 #include <cstdlib>
@@ -55,6 +56,22 @@
 #define THREAD_COUNT 0
 
 using namespace tvg;
+
+#if defined(TVGTEST_SDL_GL_SUPPORTED) || defined(TVGTEST_GL_SUPPORTED) || defined(TVGTEST_GLES_SUPPORTED) || defined(TVGTEST_WG_SUPPORTED) || defined(TVGTEST_WGPU_SUPPORTED)
+
+static void _unpremultiply(uint8_t* data, size_t size)
+{
+    // PNG requires straight-alpha RGB from premultiplied GPU readback.
+    for (auto end = data + size; data < end; data += 4) {
+        auto alpha = data[3];
+        if (alpha == 255) continue;
+        for (auto i = 0u; i < 3; ++i) {
+            data[i] = alpha ? static_cast<uint8_t>(std::min(255u, (data[i] * 255u + alpha / 2u) / alpha)) : 0;
+        }
+    }
+}
+
+#endif
 
 struct TestEngine
 {
@@ -208,6 +225,7 @@ struct TestGLEngine : TestEngine
         pixels.resize(static_cast<size_t>(width) * height * 4);
         glFinish();
         glReadPixels(0, 0, static_cast<GLsizei>(width), static_cast<GLsizei>(height), GL_RGBA, GL_UNSIGNED_BYTE, pixels.data());
+        _unpremultiply(pixels.data(), pixels.size());
         auto stride = static_cast<size_t>(width) * 4;
         std::vector<uint8_t> row(stride);
         for (uint32_t y = 0; y < height / 2; ++y) {
@@ -326,6 +344,7 @@ struct TestGLEngine : TestEngine
         if (eglMakeCurrent(display, surface, surface, context) != EGL_TRUE) return nullptr;
         glFinish();
         glReadPixels(0, 0, static_cast<GLsizei>(width), static_cast<GLsizei>(height), GL_RGBA, GL_UNSIGNED_BYTE, pixels.data());
+        _unpremultiply(pixels.data(), pixels.size());
         auto stride = static_cast<size_t>(width) * 4;
         std::vector<uint8_t> row(stride);
         for (uint32_t y = 0; y < height / 2; ++y) {
@@ -591,6 +610,7 @@ struct TestWgEngine : TestEngine
                 dst[1] = src[1];
                 dst[2] = src[0];
                 dst[3] = src[3];
+                if (colorSpace == ColorSpace::ABGR8888) _unpremultiply(dst, 4);
                 src += 4;
                 dst += 4;
             }
