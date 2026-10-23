@@ -76,7 +76,7 @@ Runner::Runner(const TestConfig& config) : config(config)
     for (const auto& entry : std::filesystem::recursive_directory_iterator(config.resourceTargetDir, std::filesystem::directory_options::skip_permission_denied, error)) {
         if (error) { error.clear(); continue; }
         auto ext = entry.path().extension();
-        if (entry.is_regular_file(error) && (ext == ".json" || ext == ".svg" || ext == ".webp" || ext == ".png")) assets.push_back(entry.path().string());
+        if (entry.is_regular_file(error) && (ext == ".json" || ext == ".svg" || ext == ".webp" || ext == ".png" || ext == ".jpg" || ext == ".jpeg")) assets.push_back(entry.path().string());
     }
     if (config.shardCount > 1) {
         std::sort(assets.begin(), assets.end());
@@ -86,9 +86,10 @@ Runner::Runner(const TestConfig& config) : config(config)
         size_t svgIndex = 0;
         size_t webpIndex = 0;
         size_t pngIndex = 0;
+        size_t jpegIndex = 0;
         for (auto& asset : assets) {
             const auto ext = std::filesystem::path(asset).extension();
-            auto& index = ext == ".json" ? lottieIndex : (ext == ".webp" ? webpIndex : (ext == ".png" ? pngIndex : svgIndex));
+            auto& index = ext == ".json" ? lottieIndex : (ext == ".webp" ? webpIndex : (ext == ".png" ? pngIndex : ((ext == ".jpg" || ext == ".jpeg") ? jpegIndex : svgIndex)));
             if (index++ % config.shardCount == config.shardIndex) shard.push_back(std::move(asset));
         }
         assets = std::move(shard);
