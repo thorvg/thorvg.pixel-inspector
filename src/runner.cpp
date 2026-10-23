@@ -39,7 +39,7 @@
 static std::filesystem::path _path(const std::string& resourceTargetDir, const std::string& outputDir, const std::string& backend, const std::string& asset, const char* role)
 {
     auto relative = std::filesystem::path(asset).lexically_relative(resourceTargetDir);
-    relative.replace_extension("." + backend + "." + role + ".png");
+    relative += "." + backend + "." + role + ".png";
     return std::filesystem::path(outputDir) / relative;
 }
 
