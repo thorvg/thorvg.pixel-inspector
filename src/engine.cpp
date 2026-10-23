@@ -520,12 +520,17 @@ struct TestWgEngine : TestEngine
         instance = wgpuCreateInstance(nullptr);
         if (!instance) return;
 
-        auto onAdapterRequestEnded = [](WGPURequestAdapterStatus, WGPUAdapter adapter, WGPUStringView, void* userdata1, void*) {
-            *((WGPUAdapter*)userdata1) = adapter;
+        auto onAdapterRequestEnded = [](WGPURequestAdapterStatus status, WGPUAdapter adapter, WGPUStringView message, void* userdata1, void*) {
+            if (status != WGPURequestAdapterStatus_Success) {
+                LOGERR("WG", "Vulkan adapter request failed: %.*s", static_cast<int>(message.length), message.data);
+                return;
+            }
+            *static_cast<WGPUAdapter*>(userdata1) = adapter;
         };
         WGPURequestAdapterOptions requestAdapterOptions = {};
         requestAdapterOptions.featureLevel = WGPUFeatureLevel_Compatibility;
         requestAdapterOptions.powerPreference = WGPUPowerPreference_HighPerformance;
+        requestAdapterOptions.backendType = WGPUBackendType_Vulkan;
 
         WGPURequestAdapterCallbackInfo requestAdapterCallback = {};
         requestAdapterCallback.mode = WGPUCallbackMode_WaitAnyOnly;
@@ -533,6 +538,14 @@ struct TestWgEngine : TestEngine
         requestAdapterCallback.userdata1 = &adapter;
         wgpuInstanceRequestAdapter(instance, &requestAdapterOptions, requestAdapterCallback);
         if (!adapter) return;
+
+        WGPUAdapterInfo info = {};
+        if (wgpuAdapterGetInfo(adapter, &info) == WGPUStatus_Success) {
+            std::fprintf(stderr, "[WG] Adapter: %.*s, backend: %s\n", static_cast<int>(info.device.length), info.device.data, info.backendType == WGPUBackendType_Vulkan ? "Vulkan" : "Other");
+            wgpuAdapterInfoFreeMembers(info);
+        } else {
+            LOGERR("WG", "Adapter info unavailable, backend: Unknown");
+        }
 
         auto onDeviceError = [](WGPUDevice const*, WGPUErrorType, WGPUStringView, void*, void*) {
         };
