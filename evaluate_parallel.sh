@@ -46,6 +46,11 @@ run_backend()
         echo "Test skipped because golden generation failed." > "$test_log"
     fi
 
+    if [ "$backend" = wg ]; then
+        awk '/^\[WG\] Adapter:/ { print "wg golden: " $0; exit }' "$golden_log"
+        awk '/^\[WG\] Adapter:/ { print "wg test: " $0; exit }' "$test_log"
+    fi
+
     echo "$backend elapsed: $((SECONDS - start)) seconds"
     return "$test_status"
 }
