@@ -12,7 +12,7 @@ REFS=()
 
 usage()
 {
-    echo "Usage: $0 [--type all|svg|webp|png] [--unzip] <golden-ref> <test-ref>"
+    echo "Usage: $0 [--type all|svg|webp|png|jpeg] [--unzip] <golden-ref> <test-ref>"
     echo "  --type   Compliance set to run (default: all)."
     echo "  --unzip  Extract archives in the selected compliance set before testing."
     echo "Example: $0 --unzip v1.1.1 main"
@@ -25,7 +25,7 @@ while [ "$#" -gt 0 ]; do
         --type=*) TYPE="${argument#*=}" ;;
         --type)
             if [ "$#" -lt 2 ]; then
-                echo "--type requires all, svg, webp or png." >&2
+                echo "--type requires all, svg, webp, png or jpeg." >&2
                 exit 1
             fi
             TYPE="$2"
@@ -51,8 +51,9 @@ case "$TYPE" in
     svg) RESOURCE_DIR="$RESOURCE_DIR/godot" ;;
     webp) RESOURCE_DIR="$RESOURCE_DIR/webp" ;;
     png) RESOURCE_DIR="$RESOURCE_DIR/png" ;;
+    jpeg) RESOURCE_DIR="$RESOURCE_DIR/jpeg" ;;
     *)
-        echo "Invalid compliance type: $TYPE (expected all, svg, webp or png)." >&2
+        echo "Invalid compliance type: $TYPE (expected all, svg, webp, png or jpeg)." >&2
         exit 1
         ;;
 esac
@@ -84,9 +85,9 @@ if [ "$UNZIP" = true ]; then
 fi
 
 # Count all supported assets under the compliance resource directory.
-ASSET_COUNT="$(find "$RESOURCE_DIR" -type f \( -name '*.svg' -o -name '*.json' -o -name '*.webp' -o -name '*.png' \) | wc -l | tr -d ' ')"
+ASSET_COUNT="$(find "$RESOURCE_DIR" -type f \( -name '*.svg' -o -name '*.json' -o -name '*.webp' -o -name '*.png' -o -name '*.jpg' -o -name '*.jpeg' \) | wc -l | tr -d ' ')"
 if [ "$ASSET_COUNT" -eq 0 ]; then
-    echo "No SVG, Lottie, WebP or PNG compliance resources found under $RESOURCE_DIR." >&2
+    echo "No SVG, Lottie, WebP, PNG or JPEG compliance resources found under $RESOURCE_DIR." >&2
     echo "Run $0 --unzip if the resources are archived." >&2
     exit 1
 fi
