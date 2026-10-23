@@ -68,10 +68,6 @@ fi
 GOLDEN_REF="${REFS[0]}"
 TEST_REF="${REFS[1]}"
 
-if [ "$TYPE" = all ] || [ "$TYPE" = webp ]; then
-    bash "$ROOTDIR/download_webp_compliance.sh"
-fi
-
 # Extract all compliance ZIP archives in place when requested.
 if [ "$UNZIP" = true ]; then
     command -v unzip >/dev/null 2>&1 || {
