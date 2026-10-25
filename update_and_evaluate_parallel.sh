@@ -49,6 +49,7 @@ build_revision()
         --libdir lib \
         -Dengines=all \
         -Dloaders=all \
+        -Dstatic=true \
         -Dextra=lottie_exp,openmp
     ninja -C "$thorvg_build"
     ninja -C "$thorvg_build" install
