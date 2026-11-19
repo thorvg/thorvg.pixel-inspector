@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="500" height="540">
+  <style>
+    .letter-tracked { letter-spacing: 6px; }
+    .letter-relative { letter-spacing: .5em; }
+    .word-spaced { word-spacing: 6px; }
+    .word-relative { word-spacing: .5em; }
+  </style>
+  <rect width="500" height="540" fill="white"/>
+
+  <g>
+    <text id="letter-normal" x="10" y="35" font-family="PublicSans-Regular" font-size="40">WiWi</text>
+    <text id="letter-wide" x="10" y="75" font-family="PublicSans-Regular" font-size="40" letter-spacing="10">WiWi</text>
+    <text id="letter-tight" x="10" y="115" font-family="PublicSans-Regular" font-size="40" style="letter-spacing: -2px">WiWi</text>
+    <text id="letter-class" class="letter-tracked" x="10" y="155" font-family="PublicSans-Regular" font-size="40">WiWi</text>
+    <g letter-spacing="4">
+      <text id="letter-inherited" x="10" y="195" font-family="PublicSans-Regular" font-size="40">WiWi</text>
+    </g>
+    <text id="letter-relative" class="letter-relative" x="10" y="235" font-family="PublicSans-Regular" font-size="40">WiWi</text>
+    <text id="letter-percentage" x="10" y="275" font-family="PublicSans-Regular" font-size="40" letter-spacing="10%">WiWi</text>
+  </g>
+
+  <g transform="translate(250 0)">
+    <text id="word-normal" x="10" y="35" font-family="PublicSans-Regular" font-size="40">A B C</text>
+    <text id="word-wide" x="10" y="75" font-family="PublicSans-Regular" font-size="40" word-spacing="10">A B C</text>
+    <text id="word-tight" x="10" y="115" font-family="PublicSans-Regular" font-size="40" style="word-spacing: -2px">A B C</text>
+    <text id="word-class" class="word-spaced" x="10" y="155" font-family="PublicSans-Regular" font-size="40">A B C</text>
+    <g word-spacing="4">
+      <text id="word-inherited" x="10" y="195" font-family="PublicSans-Regular" font-size="40">A B C</text>
+    </g>
+    <g word-spacing="10">
+      <text id="word-reset" x="10" y="235" font-family="PublicSans-Regular" font-size="40" word-spacing="normal">A B C</text>
+    </g>
+    <text id="word-relative" class="word-relative" x="10" y="275" font-family="PublicSans-Regular" font-size="40">A B C</text>
+    <text id="word-percentage" x="10" y="315" font-family="PublicSans-Regular" font-size="40" word-spacing="10%">A B C</text>
+    <text id="word-compact-normal" x="10" y="355" font-family="PublicSans-Regular" font-size="40">ABC</text>
+    <text id="word-compact" x="10" y="395" font-family="PublicSans-Regular" font-size="40" word-spacing="10">ABC</text>
+    <text id="word-tspan" x="10" y="435" font-family="PublicSans-Regular" font-size="40" word-spacing="10"><tspan>A </tspan><tspan>B C</tspan></text>
+  </g>
+
+  <text id="both-normal" x="10" y="485" font-family="PublicSans-Regular" font-size="40">A B C</text>
+  <text id="both-spaced" x="250" y="485" font-family="PublicSans-Regular" font-size="40" letter-spacing="4" word-spacing="10">A B C</text>
+</svg>

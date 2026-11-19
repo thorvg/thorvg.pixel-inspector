@@ -1,0 +1,80 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="1080" viewBox="0 0 960 1080">
+  <style>
+    @font-face {
+      font-family: "PublicSans-Regular";
+      src: url("PublicSans-Regular.ttf");
+    }
+    .css-bold { font-weight: 700; }
+  </style>
+
+  <rect width="960" height="1080" fill="#f8fafc"/>
+  <rect x="24" y="24" width="912" height="92" rx="12" fill="#0f172a"/>
+  <text x="52" y="64" font-family="PublicSans-Regular" font-size="30" font-weight="bold" fill="#ffffff">ThorVG SVG font-weight</text>
+  <text x="52" y="94" font-family="PublicSans-Regular" font-size="16" fill="#cbd5e1">100-500: regular / 600-900: synthetic bold</text>
+
+  <text x="44" y="158" font-family="PublicSans-Regular" font-size="22" font-weight="bold" fill="#0f172a">Numeric values and inherited container weight</text>
+  <text x="54" y="192" font-family="PublicSans-Regular" font-size="14" fill="#64748b">VALUE</text>
+  <text x="170" y="192" font-family="PublicSans-Regular" font-size="14" fill="#64748b">SAMPLE</text>
+  <path d="M44 204H916" stroke="#cbd5e1"/>
+
+  <g font-weight="100" fill="#1e293b">
+    <text x="54" y="246" font-family="PublicSans-Regular" font-size="19">100</text>
+    <text x="170" y="246" font-family="PublicSans-Regular" font-size="30">Pack my box with five dozen glyphs</text>
+  </g>
+  <g font-weight="200" fill="#1e293b">
+    <text x="54" y="292" font-family="PublicSans-Regular" font-size="19">200</text>
+    <text x="170" y="292" font-family="PublicSans-Regular" font-size="30">Pack my box with five dozen glyphs</text>
+  </g>
+  <g font-weight="300" fill="#1e293b">
+    <text x="54" y="338" font-family="PublicSans-Regular" font-size="19">300</text>
+    <text x="170" y="338" font-family="PublicSans-Regular" font-size="30">Pack my box with five dozen glyphs</text>
+  </g>
+  <g font-weight="400" fill="#1e293b">
+    <text x="54" y="384" font-family="PublicSans-Regular" font-size="19">400</text>
+    <text x="170" y="384" font-family="PublicSans-Regular" font-size="30">Pack my box with five dozen glyphs</text>
+  </g>
+  <g font-weight="500" fill="#1e293b">
+    <text x="54" y="430" font-family="PublicSans-Regular" font-size="19">500</text>
+    <text x="170" y="430" font-family="PublicSans-Regular" font-size="30">Pack my box with five dozen glyphs</text>
+  </g>
+  <g font-weight="600" fill="#1e293b">
+    <text x="54" y="476" font-family="PublicSans-Regular" font-size="19">600</text>
+    <text x="170" y="476" font-family="PublicSans-Regular" font-size="30">Pack my box with five dozen glyphs</text>
+  </g>
+  <g font-weight="700" fill="#1e293b">
+    <text x="54" y="522" font-family="PublicSans-Regular" font-size="19">700</text>
+    <text x="170" y="522" font-family="PublicSans-Regular" font-size="30">Pack my box with five dozen glyphs</text>
+  </g>
+  <g font-weight="800" fill="#1e293b">
+    <text x="54" y="568" font-family="PublicSans-Regular" font-size="19">800</text>
+    <text x="170" y="568" font-family="PublicSans-Regular" font-size="30">Pack my box with five dozen glyphs</text>
+  </g>
+  <g font-weight="900" fill="#1e293b">
+    <text x="54" y="614" font-family="PublicSans-Regular" font-size="19">900</text>
+    <text x="170" y="614" font-family="PublicSans-Regular" font-size="30">Pack my box with five dozen glyphs</text>
+  </g>
+
+  <rect x="24" y="646" width="912" height="238" rx="12" fill="#ffffff" stroke="#e2e8f0"/>
+  <text x="44" y="684" font-family="PublicSans-Regular" font-size="22" font-weight="bold" fill="#0f172a">Keywords, relative values, and tspan inheritance</text>
+  <text x="54" y="726" font-family="PublicSans-Regular" font-size="17" fill="#475569">normal</text>
+  <text x="260" y="726" font-family="PublicSans-Regular" font-size="26" font-weight="normal" fill="#1e293b">Normal 400</text>
+  <text x="54" y="766" font-family="PublicSans-Regular" font-size="17" fill="#475569">bold</text>
+  <text x="260" y="766" font-family="PublicSans-Regular" font-size="26" font-weight="bold" fill="#1e293b">Bold 700</text>
+  <text x="54" y="806" font-family="PublicSans-Regular" font-size="17" fill="#475569">normal -> bolder</text>
+  <g font-weight="normal">
+    <text x="260" y="806" font-family="PublicSans-Regular" font-size="26" font-weight="bolder" fill="#1e293b">Bolder 700</text>
+  </g>
+  <text x="54" y="846" font-family="PublicSans-Regular" font-size="17" fill="#475569">bold parent</text>
+  <text x="260" y="846" font-family="PublicSans-Regular" font-size="26" font-weight="bold" fill="#1e293b"><tspan>Inherited bold</tspan><tspan dx="34" font-weight="lighter">Lighter 400</tspan><tspan dx="34" font-weight="inherit">Inherit 700</tspan></text>
+
+  <rect x="24" y="908" width="912" height="140" rx="12" fill="#ffffff" stroke="#e2e8f0"/>
+  <text x="44" y="946" font-family="PublicSans-Regular" font-size="22" font-weight="bold" fill="#0f172a">Equivalent input forms</text>
+  <text x="54" y="988" font-family="PublicSans-Regular" font-size="16" fill="#475569">attribute</text>
+  <text x="190" y="988" font-family="PublicSans-Regular" font-size="25" font-weight="700" fill="#2563eb">Bold</text>
+  <text x="330" y="988" font-family="PublicSans-Regular" font-size="16" fill="#475569">inline style</text>
+  <text x="470" y="988" font-family="PublicSans-Regular" font-size="25" style="font-weight: 700" fill="#2563eb">Bold</text>
+  <text x="610" y="988" font-family="PublicSans-Regular" font-size="16" fill="#475569">CSS class</text>
+  <text x="730" y="988" font-family="PublicSans-Regular" font-size="25" class="css-bold" fill="#2563eb">Bold</text>
+  <text x="520" y="1028" font-family="PublicSans-Regular" font-size="16" fill="#475569">currentColor</text>
+  <text x="660" y="1028" font-family="PublicSans-Regular" font-size="25" font-weight="700" color="#7c3aed" fill="currentColor">Bold</text>
+</svg>

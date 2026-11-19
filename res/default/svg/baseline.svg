@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="840" height="730" viewBox="0 0 840 730">
+  <rect width="840" height="730" fill="#ffffff"/>
+  <style>.db-central { dominant-baseline: central; }</style>
+
+  <!-- 1. alignment-baseline: basic values -->
+  <text x="15" y="40" font-family="sans-serif" font-size="14" fill="#999999">1. alignment-baseline (basic)</text>
+  <line x1="0" y1="120" x2="840" y2="120" stroke="#cccccc" stroke-width="2"/>
+  <text x="15" y="120" font-family="sans-serif" font-size="30">
+    <tspan fill="#333333" alignment-baseline="baseline">base</tspan>
+    <tspan dx="10" fill="#708090" alignment-baseline="alphabetic">alpha</tspan>
+    <tspan dx="10" fill="#1a6fd4" alignment-baseline="before-edge">before</tspan>
+    <tspan dx="10" fill="#ff8c00" alignment-baseline="hanging">hang</tspan>
+    <tspan dx="10" fill="#e03030" alignment-baseline="middle">middle</tspan>
+    <tspan dx="10" fill="#2e8b57" alignment-baseline="central">central</tspan>
+    <tspan dx="10" fill="#008b8b" alignment-baseline="mathematical">math</tspan>
+    <tspan dx="10" fill="#7d3bbf" alignment-baseline="after-edge">after</tspan>
+  </text>
+
+  <!-- 2. dominant-baseline: basic values -->
+  <text x="15" y="210" font-family="sans-serif" font-size="14" fill="#999999">2. dominant-baseline (basic)</text>
+  <line x1="0" y1="290" x2="840" y2="290" stroke="#cccccc" stroke-width="2"/>
+  <text x="15" y="290" font-family="sans-serif" font-size="30">
+    <tspan fill="#333333" dominant-baseline="auto">auto</tspan>
+    <tspan dx="10" fill="#708090" dominant-baseline="alphabetic">alpha</tspan>
+    <tspan dx="10" fill="#1a6fd4" dominant-baseline="text-before-edge">before</tspan>
+    <tspan dx="10" fill="#ff8c00" dominant-baseline="hanging">hang</tspan>
+    <tspan dx="10" fill="#e03030" dominant-baseline="middle">middle</tspan>
+    <tspan dx="10" fill="#2e8b57" dominant-baseline="central">central</tspan>
+    <tspan dx="10" fill="#008b8b" dominant-baseline="mathematical">math</tspan>
+    <tspan dx="10" fill="#7d3bbf" dominant-baseline="text-after-edge">after</tspan>
+    <tspan dx="10" fill="#b8860b" dominant-baseline="ideographic">ideo</tspan>
+  </text>
+
+  <!-- 3a. precedence: alignment-baseline wins over inherited dominant-baseline -->
+  <text x="15" y="380" font-family="sans-serif" font-size="14" fill="#999999">3a. dominant-baseline=hanging on text / alignment-baseline overrides per tspan</text>
+  <line x1="0" y1="440" x2="840" y2="440" stroke="#cccccc" stroke-width="2"/>
+  <text x="15" y="440" font-family="sans-serif" font-size="26" dominant-baseline="hanging">
+    <tspan fill="#333333">inherit-hang</tspan>
+    <tspan dx="14" fill="#e03030" alignment-baseline="middle">align-wins</tspan>
+    <tspan dx="14" fill="#1a6fd4" alignment-baseline="baseline">back-to-hang</tspan>
+    <tspan dx="14" fill="#2e8b57" dominant-baseline="alphabetic">own-dominant</tspan>
+  </text>
+
+  <!-- 3b. inheritance through g + keywords that must keep the inherited value -->
+  <text x="15" y="510" font-family="sans-serif" font-size="14" fill="#999999">3b. g dominant-baseline=middle / inherit + no-change keep it, text-top/bottom override</text>
+  <line x1="0" y1="570" x2="840" y2="570" stroke="#cccccc" stroke-width="2"/>
+  <g dominant-baseline="middle">
+    <text x="15" y="570" font-family="sans-serif" font-size="26">
+      <tspan fill="#333333">g-inherit</tspan>
+      <tspan dx="14" fill="#708090" dominant-baseline="inherit">inherit-kw</tspan>
+      <tspan dx="14" fill="#e03030" dominant-baseline="no-change">no-change</tspan>
+      <tspan dx="14" fill="#1a6fd4" dominant-baseline="text-top">text-top</tspan>
+      <tspan dx="14" fill="#7d3bbf" dominant-baseline="text-bottom">text-bottom</tspan>
+    </text>
+  </g>
+
+  <!-- 3c. css class + inline style paths -->
+  <text x="15" y="640" font-family="sans-serif" font-size="14" fill="#999999">3c. css class dominant-baseline=central / inline style per tspan</text>
+  <line x1="0" y1="680" x2="840" y2="680" stroke="#cccccc" stroke-width="2"/>
+  <text x="15" y="680" font-family="sans-serif" font-size="26" class="db-central">
+    <tspan fill="#333333">css-class</tspan>
+    <tspan dx="14" fill="#ff8c00" style="alignment-baseline:hanging">style-align</tspan>
+    <tspan dx="14" fill="#2e8b57" style="dominant-baseline:alphabetic">style-dominant</tspan>
+  </text>
+</svg>
